@@ -5,6 +5,7 @@ class MainRouter extends Router {
   applyRoutes(application: restify.Server) {
     application.get('/', (req, resp, next)=>{
       resp.json({
+        version: "1.0.0",
         users: '/users',
         restaurants: '/restaurants',
         reviews: '/reviews'
