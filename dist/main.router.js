@@ -7,8 +7,8 @@ class MainRouter extends router_1.Router {
             resp.json({
                 version: "1.0.0",
                 users: '/users',
-                restaurants: '/restaurants',
-                reviews: '/reviews'
+                jobs: '/jobs',
+                certification: '/certification'
             });
         });
     }
