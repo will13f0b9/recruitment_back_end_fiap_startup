@@ -16,10 +16,10 @@ export class Server {
 
   application: restify.Server
 
-  initializeDb(): mongoose.MongooseThenable {
+  initializeDb(): any{
     (<any>mongoose).Promise = global.Promise
     return mongoose.connect(environment.db.url, {
-      useMongoClient: true
+      useNewUrlParser: true
     })
   }
 
