@@ -8,7 +8,8 @@ class MainRouter extends router_1.Router {
                 version: "1.0.0",
                 users: '/users',
                 jobs: '/jobs',
-                certifications: '/certifications'
+                certifications: '/certifications',
+                plans: '/plans'
             });
         });
     }

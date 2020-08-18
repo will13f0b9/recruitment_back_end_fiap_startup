@@ -8,7 +8,8 @@ class MainRouter extends Router {
         version: "1.0.0",
         users: '/users',
         jobs: '/jobs',
-        certifications: '/certifications'
+        certifications: '/certifications',
+        plans: '/plans'
       })
     })
   }

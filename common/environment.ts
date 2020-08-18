@@ -1,6 +1,6 @@
 export const environment = {
   server: { port: process.env.PORT || 3000 },
-  db: {url: process.env.DB_URL || 'mongodb+srv://NODEJS:C8rU8BpmuBXyrvG@fiap.g2vzl.mongodb.net/meat-api'},
+  db: {url: process.env.DB_URL || 'mongodb://localhost/meat-api'},
   security: {
     saltRounds: process.env.SALT_ROUNDS || 10,
     apiSecret: process.env.API_SECERT || 'meat-api-secret',

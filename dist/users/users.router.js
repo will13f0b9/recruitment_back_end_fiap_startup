@@ -27,11 +27,7 @@ class UsersRouter extends model_router_1.ModelRouter {
         });
     }
     applyRoutes(application) {
-        application.get({ path: `${this.basePath}`, version: '2.0.0' }, [
-            authz_handler_1.authorize('admin'),
-            this.findByEmail,
-            this.findAll
-        ]);
+        application.get({ path: `${this.basePath}`, version: '2.0.0' }, [authz_handler_1.authorize('admin'), this.findByEmail, this.findAll]);
         application.get({ path: `${this.basePath}`, version: '1.0.0' }, [authz_handler_1.authorize('admin'), this.findAll]);
         application.get(`${this.basePath}/:id`, [authz_handler_1.authorize('admin'), this.validateId, this.findById]);
         application.post(`${this.basePath}`, [authz_handler_1.authorize('admin'), this.save]);

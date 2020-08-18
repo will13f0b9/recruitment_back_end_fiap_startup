@@ -3,13 +3,15 @@ import {usersRouter} from './users/users.router'
 import {restaurantsRouter} from './restaurants/restaurants.router'
 import {reviewsRouter} from './reviews/reviews.router'
 import {mainRouter} from './main.router'
+import { plansRouter } from './plans/plans.router'
 
 const server = new Server()
 server.bootstrap([
   usersRouter,
   restaurantsRouter,
   reviewsRouter,
-  mainRouter
+  mainRouter,
+  plansRouter
 ]).then(server=>{
   console.log('Server is listening on:', server.application.address())
 }).catch(error=>{
