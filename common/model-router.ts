@@ -51,15 +51,17 @@ export abstract class ModelRouter<D extends mongoose.Document> extends Router {
     }
   }
 
-  findAll = (req, resp, next)=>{
+  findAll = (req, resp, next, ...project)=>{
     let page = parseInt(req.query._page || 1)
     page = page > 0 ? page : 1
 
     const skip = (page - 1) * this.pageSize
-
+    console.log("XAAXAXAX")
+    console.log(this.model)
+    console.log(project)
     this.model
         .count({}).exec()
-        .then(count=>this.model.find()
+        .then(count=>this.model.find().populate(project)
                   .skip(skip)
                   .limit(this.pageSize)
                   .then(this.renderAll(resp,next, {
