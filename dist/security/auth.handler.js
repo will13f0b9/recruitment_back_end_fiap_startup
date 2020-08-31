@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.authenticate = void 0;
 const jwt = require("jsonwebtoken");
 const restify_errors_1 = require("restify-errors");
 const users_model_1 = require("../users/users.model");

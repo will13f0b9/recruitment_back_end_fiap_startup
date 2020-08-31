@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ModelRouter = void 0;
 const router_1 = require("./router");
 const mongoose = require("mongoose");
 const restify_errors_1 = require("restify-errors");

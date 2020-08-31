@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.restaurantsRouter = void 0;
 const model_router_1 = require("../common/model-router");
 const restify_errors_1 = require("restify-errors");
 const restaurants_model_1 = require("./restaurants.model");

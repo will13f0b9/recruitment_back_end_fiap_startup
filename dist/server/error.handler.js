@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.handleError = void 0;
 exports.handleError = (req, resp, err, done) => {
-    console.log("ERRO DOIDO");
-    console.log;
     err['toJSONx'] = () => {
         return {
             message: err.message
@@ -20,15 +19,11 @@ exports.handleError = (req, resp, err, done) => {
             for (let name in err.errors) {
                 messages.push({ message: err.errors[name].message });
             }
-            console.log("ae");
             err['toJSONx'] = () => ({
                 message: 'Validation error while processing your request',
                 errors: messages
             });
-            console.log("aexa");
             break;
     }
-    console.log("aexac");
     done();
-    console.log("aexacasdd");
 };
