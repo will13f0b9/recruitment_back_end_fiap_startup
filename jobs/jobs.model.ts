@@ -17,10 +17,11 @@ export interface Job extends mongoose.Document {
   description: string,
   salary: number,
   hiring: string,
-  specialExam: mongoose.Types.ObjectId | any,//todo mudar any para company model dps
-  exams: [mongoose.Types.ObjectId | any],//todo mudar any para company model dps
+  questions: [mongoose.Types.ObjectId | any],//todo mudar any para company model dps
   lastUpdateDate: Date,
-  registerDate: Date
+  registerDate: Date,
+  benefits: string[],
+  difficulty: string[]
 }
 
 const restSchema = new mongoose.Schema({
@@ -86,29 +87,31 @@ const restSchema = new mongoose.Schema({
     required: true,
     enum: ['PJ', 'CLT']
   },
-  specialExam: {
-    type: mongoose.Schema.Types.ObjectId,
-    //ref: 'User',
-    required: false
-  },
-  exams: {
+  questions: {
     type: [mongoose.Schema.Types.ObjectId],
-    //ref: 'User',
+    ref: 'Question',
     required: false,
     default: []
   },
   lastUpdateDate: {
     type: Date,
-    //ref: 'User',
     required: false,
     default: ()=> new Date()
   },
   registerDate: {
     type: Date,
-    //ref: 'User',
     required: false,
     default: ()=> new Date()
   },
+  benefits: {
+    type: [String],
+    required: false
+  },
+  difficulty: {
+    type: [String],
+    required: true,
+    enum: ["STAGE","JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
+  }
 })
 
 

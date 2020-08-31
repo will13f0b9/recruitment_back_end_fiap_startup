@@ -65,28 +65,30 @@ const restSchema = new mongoose.Schema({
         required: true,
         enum: ['PJ', 'CLT']
     },
-    specialExam: {
-        type: mongoose.Schema.Types.ObjectId,
-        //ref: 'User',
-        required: false
-    },
-    exams: {
+    questions: {
         type: [mongoose.Schema.Types.ObjectId],
-        //ref: 'User',
+        ref: 'Question',
         required: false,
         default: []
     },
     lastUpdateDate: {
         type: Date,
-        //ref: 'User',
         required: false,
         default: () => new Date()
     },
     registerDate: {
         type: Date,
-        //ref: 'User',
         required: false,
         default: () => new Date()
     },
+    benefits: {
+        type: [String],
+        required: false
+    },
+    difficulty: {
+        type: [String],
+        required: true,
+        enum: ["STAGE", "JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
+    }
 });
 exports.Job = mongoose.model('Job', restSchema);

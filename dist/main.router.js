@@ -11,7 +11,8 @@ class MainRouter extends router_1.Router {
                 jobs: '/jobs',
                 certifications: '/certifications',
                 plans: '/plans',
-                companies: "/companies"
+                companies: "/companies",
+                questions: "/questions"
             });
         });
     }

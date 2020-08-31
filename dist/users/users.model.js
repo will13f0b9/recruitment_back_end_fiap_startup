@@ -38,6 +38,16 @@ const userSchema = new mongoose.Schema({
     },
     profiles: {
         type: [String],
+        required: true,
+        enum: ['CANDIDATE', 'RECRUITER']
+    },
+    bussinessAccount: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Company',
+        required: false
+    },
+    dateOfBirth: {
+        type: Date,
         required: false
     }
 });

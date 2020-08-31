@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plan = void 0;
+exports.Question = void 0;
 const mongoose = require("mongoose");
 const restSchema = new mongoose.Schema({
     name: {
@@ -21,4 +21,4 @@ const restSchema = new mongoose.Schema({
         default: []
     }
 });
-exports.Plan = mongoose.model('Plan', restSchema);
+exports.Question = mongoose.model('Question', restSchema);
