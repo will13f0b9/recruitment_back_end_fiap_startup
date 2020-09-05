@@ -32,6 +32,18 @@ class UsersRouter extends ModelRouter<User> {
     }
   }
 
+  populateCompany = (req, resp, next)=>{
+    const document = new User(req.body) 
+    User.findOne({email: document.email, profiles: document.profiles}).then(user =>{
+      if(user && document.companies){
+        document.companies.forEach(company => user.companies.push(company));
+        user.save().then(user => resp.json(user)).catch(next);
+      }else{
+        next();
+      }
+    }).catch(next);
+   }
+
   addNewCompanyToPreviousRecruiter = (req, resp, next) =>{
     if(!req.params.userId) return new BadRequestError("Necessário enviar userId na url");
     if(!req.body) return new BadRequestError("Necessário enviar um body na requisição");
@@ -46,7 +58,7 @@ class UsersRouter extends ModelRouter<User> {
     application.get({path:`${this.basePath}`, version: '2.0.0'}, [this.findByEmail,this.findAll])
     application.get({path:`${this.basePath}`, version: '1.0.0'}, [this.findAll])
     application.get(`${this.basePath}/:id`, [this.validateId, this.findById])
-    application.post(`${this.basePath}`, [this.save])
+    application.post(`${this.basePath}`, [this.populateCompany, this.save])
     application.put(`${this.basePath}/:id`, [  this.validateId,this.replace])
     application.patch(`${this.basePath}/:id`, [this.validateId,this.update])
     application.del(`${this.basePath}/:id`, [this.validateId,this.delete])

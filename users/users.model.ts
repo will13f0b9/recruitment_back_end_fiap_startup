@@ -11,7 +11,7 @@ export interface User extends mongoose.Document {
   cpf: string,
   gender: string,
   profiles: string[],
-  companies: [mongoose.Types.ObjectId[] | Company[]],
+  companies: [mongoose.Types.ObjectId | Company],
   dateOfBirth: Date,
   description: string,
   matches(password: string): boolean,
