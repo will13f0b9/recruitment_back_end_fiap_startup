@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.User = void 0;
 const mongoose = require("mongoose");
 const validators_1 = require("../common/validators");
 const bcrypt = require("bcrypt");
@@ -41,13 +40,17 @@ const userSchema = new mongoose.Schema({
         required: true,
         enum: ['CANDIDATE', 'RECRUITER']
     },
-    bussinessAccount: {
-        type: mongoose.Schema.Types.ObjectId,
+    companies: {
+        type: [mongoose.Schema.Types.ObjectId],
         ref: 'Company',
         required: false
     },
     dateOfBirth: {
         type: Date,
+        required: false
+    },
+    description: {
+        type: String,
         required: false
     }
 });

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.questionRouter = void 0;
 const model_router_1 = require("../common/model-router");
 const questions_model_1 = require("./questions.model");
 class QuestionRouter extends model_router_1.ModelRouter {

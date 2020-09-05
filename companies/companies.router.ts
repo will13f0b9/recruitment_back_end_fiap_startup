@@ -9,6 +9,21 @@ class CompaniesRouter extends ModelRouter<Company> {
     super(Company)
   }
 
+
+  findByCnpj = (req, resp, next)=>{
+    if(req.query.cnpj){
+      Company.findByCnpj(req.query.cnpj)
+          .then(company => company ? [company] : [])
+          .then(this.renderAll(resp, next, {
+                pageSize: this.pageSize,
+                url: req.url
+              }))
+          .catch(next)
+    }else{
+      next()
+    }
+  }
+
   applyRoutes(application: restify.Server){
     application.get(`${this.basePath}`, this.findAll)
     application.get(`${this.basePath}/:id`, [this.validateId, this.findById])

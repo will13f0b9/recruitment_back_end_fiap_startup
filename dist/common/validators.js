@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateCPF = void 0;
 //adaptada de https://gist.github.com/joaohcrangel/8bd48bcc40b9db63bef7201143303937.js
 exports.validateCPF = (cpf) => {
     let sum, rest;

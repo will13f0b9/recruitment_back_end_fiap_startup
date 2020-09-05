@@ -28,6 +28,7 @@ function extractToken(req: restify.Request){
 function applyBearer (req: restify.Request, next): (error, decoded) => void {
   return (error, decoded) =>{
     if(decoded) {
+      console.log("TKN PARSER APPLY BEARER");
       User.findByEmail(decoded.sub).then(user=>{
         if(user){
           //associar o usuário no request

@@ -6,6 +6,7 @@ export const handleError = (req: restify.Request, resp: restify.Response, err, d
       message : err.message
     }
   }
+  console.log(err);
   switch(err.name){
     case 'MongoError':
       if(err.code === 11000){

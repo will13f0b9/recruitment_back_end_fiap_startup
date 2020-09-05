@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reviewsRouter = void 0;
 const model_router_1 = require("../common/model-router");
 const reviews_model_1 = require("./reviews.model");
 const authz_handler_1 = require("../security/authz.handler");

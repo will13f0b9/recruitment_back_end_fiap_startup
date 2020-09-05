@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleError = void 0;
 exports.handleError = (req, resp, err, done) => {
     err['toJSONx'] = () => {
         return {
             message: err.message
         };
     };
+    console.log(err);
     switch (err.name) {
         case 'MongoError':
             if (err.code === 11000) {

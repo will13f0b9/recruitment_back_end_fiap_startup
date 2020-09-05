@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Server = void 0;
 const fs = require("fs");
 const restify = require("restify");
 const mongoose = require("mongoose");

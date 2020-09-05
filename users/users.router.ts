@@ -1,9 +1,10 @@
 import {ModelRouter} from '../common/model-router'
 import * as restify from 'restify'
-import {NotFoundError} from 'restify-errors'
+import {NotFoundError, BadRequestError} from 'restify-errors'
 import {User} from './users.model'
 import {authenticate} from '../security/auth.handler'
 import {authorize} from '../security/authz.handler'
+import * as mongoose from 'mongoose'
 
 
 class UsersRouter extends ModelRouter<User> {
@@ -30,6 +31,15 @@ class UsersRouter extends ModelRouter<User> {
     }
   }
 
+  addNewCompanyToPreviousRecruiter = (req, resp, next) =>{
+    if(!req.params.userId) return new BadRequestError("Necessário enviar userId na url");
+    if(!req.body) return new BadRequestError("Necessário enviar um body na requisição");
+    if(!req.body.companyId) return new BadRequestError("Necessário enviar companyId no body da requisição");
+    console.log(`PUSH COMPANYID=${req.body.companyId} TO USERID=${req.params.userId}`)
+    User.findOneAndUpdate({_id: mongoose.Types.ObjectId(req.params.userId)}, {"$push": {"companies": req.body.companyId}}).then(next).catch(next);
+    return resp.json()
+  }
+
   applyRoutes(application: restify.Server){
 
     application.get({path:`${this.basePath}`, version: '2.0.0'}, [this.findByEmail,this.findAll])
@@ -39,6 +49,8 @@ class UsersRouter extends ModelRouter<User> {
     application.put(`${this.basePath}/:id`, [  this.validateId,this.replace])
     application.patch(`${this.basePath}/:id`, [this.validateId,this.update])
     application.del(`${this.basePath}/:id`, [this.validateId,this.delete])
+
+    application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter])
 
     application.post(`${this.basePath}/authenticate`, authenticate)
   }

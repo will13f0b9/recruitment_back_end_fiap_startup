@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tokenParser = void 0;
 const jwt = require("jsonwebtoken");
 const users_model_1 = require("../users/users.model");
 const environment_1 = require("../common/environment");
@@ -28,6 +27,7 @@ function extractToken(req) {
 function applyBearer(req, next) {
     return (error, decoded) => {
         if (decoded) {
+            console.log("TKN PARSER APPLY BEARER");
             users_model_1.User.findByEmail(decoded.sub).then(user => {
                 if (user) {
                     //associar o usuário no request

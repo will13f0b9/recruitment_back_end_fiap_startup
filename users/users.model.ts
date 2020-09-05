@@ -11,8 +11,9 @@ export interface User extends mongoose.Document {
   cpf: string,
   gender: string,
   profiles: string[],
-  bussinessAccount: [mongoose.Types.ObjectId | Company],
+  companies: [mongoose.Types.ObjectId[] | Company[]],
   dateOfBirth: Date,
+  description: string,
   matches(password: string): boolean,
   hasAny(...profiles: string[]): boolean
 }
@@ -57,13 +58,17 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ['CANDIDATE', 'RECRUITER']
   },
-  bussinessAccount:{
-    type: mongoose.Schema.Types.ObjectId,
+  companies:{
+    type: [mongoose.Schema.Types.ObjectId],
     ref: 'Company',
     required: false
   },
   dateOfBirth: {
     type: Date,
+    required: false
+  },
+  description: {
+    type: String,
     required: false
   }
 })

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Restaurant = void 0;
 const mongoose = require("mongoose");
 const menuSchema = new mongoose.Schema({
     name: {
