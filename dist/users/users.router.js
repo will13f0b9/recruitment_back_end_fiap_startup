@@ -9,9 +9,10 @@ class UsersRouter extends model_router_1.ModelRouter {
     constructor() {
         super(users_model_1.User);
         this.findByEmail = (req, resp, next) => {
-            if (req.query.email) {
-                users_model_1.User.findByEmail(req.query.email)
-                    .then(user => user ? [user] : [])
+            if (req.query) {
+                console.log(JSON.stringify(req.query));
+                users_model_1.User.find(req.query)
+                    .then(user => user ? user : [])
                     .then(this.renderAll(resp, next, {
                     pageSize: this.pageSize,
                     url: req.url

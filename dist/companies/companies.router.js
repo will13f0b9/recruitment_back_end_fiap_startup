@@ -8,6 +8,7 @@ class CompaniesRouter extends model_router_1.ModelRouter {
         super(companies_model_1.Company);
         this.findByCnpj = (req, resp, next) => {
             if (req.query.cnpj) {
+                console.log(`Buscando por CNPJ=${req.query.cnpj}`);
                 companies_model_1.Company.findByCnpj(req.query.cnpj)
                     .then(company => company ? [company] : [])
                     .then(this.renderAll(resp, next, {
@@ -22,7 +23,7 @@ class CompaniesRouter extends model_router_1.ModelRouter {
         };
     }
     applyRoutes(application) {
-        application.get(`${this.basePath}`, this.findAll);
+        application.get(`${this.basePath}`, [this.findByCnpj, this.findAll]);
         application.get(`${this.basePath}/:id`, [this.validateId, this.findById]);
         application.post(`${this.basePath}`, [this.save]);
         application.put(`${this.basePath}/:id`, [authz_handler_1.authorize('admin'), this.validateId, this.replace]);
