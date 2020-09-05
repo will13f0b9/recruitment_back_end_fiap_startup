@@ -40,6 +40,7 @@ class ModelRouter extends router_1.Router {
         };
         this.save = (req, resp, next) => {
             let document = new this.model(req.body);
+            console.log(document);
             document.save()
                 .then(this.render(resp, next))
                 .catch(next);

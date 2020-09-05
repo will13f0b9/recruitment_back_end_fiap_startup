@@ -20,8 +20,27 @@ class JobsRouter extends ModelRouter<Job> {
     return  this.findAll(req, resp, next, x);
   }
 
+
+  findByFilters = (req, resp, next)=>{
+    if(req.query){
+      console.log(JSON.stringify(req.query))
+      if(req.query.requiredSkills){
+        req.query.requiredSkills = {"$in": [req.query.requiredSkills.split(",")]}
+      }
+      Job.find(req.query).populate("name", "employees")
+          .then(user => user ? user : [])
+          .then(this.renderAll(resp, next, {
+                pageSize: this.pageSize,
+                url: req.url
+              }))
+          .catch(next)
+    }else{
+      next()
+    }
+  }
+
   applyRoutes(application: restify.Server){
-    application.get(`${this.basePath}`, this.findAllPopulate)
+    application.get(`${this.basePath}`, [this.findByFilters, this.findAllPopulate])
     application.get(`${this.basePath}/:id`, [this.validateId, this.findById])
     application.post(`${this.basePath}`, [this.save])
     application.put(`${this.basePath}/:id`, [authorize('admin'),this.validateId,this.replace])

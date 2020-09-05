@@ -64,12 +64,6 @@ const restSchema = new mongoose.Schema({
         required: true,
         enum: ['PJ', 'CLT']
     },
-    questions: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: 'Question',
-        required: false,
-        default: []
-    },
     lastUpdateDate: {
         type: Date,
         required: false,
