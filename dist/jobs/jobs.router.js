@@ -41,74 +41,78 @@ class JobsRouter extends model_router_1.ModelRouter {
             }
         };
         this.pushViewed = (req, resp, next) => {
-            if (!req.params.id)
-                throw new restify_errors_1.BadRequestError("Necessário enviar id do job na url");
-            if (!req.params.userId)
-                throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
-            return jobs_model_1.Job.updateOne({ _id: req.params.id, usersWhoViewed: { $ne: req.params.userId } }, { $push: { usersWhoViewed: mongoose.Types.ObjectId(req.params.userId) } }).then(job => {
-                if (job.nModified == 0) {
-                    resp.status(400);
-                    return resp.json({ message: "Usuário já vizualizou vaga" });
-                }
-                else {
-                    return resp.json({ message: "Visualização adicionada com sucesso" });
-                }
+            new Promise((res, rejct) => {
+                if (!req.params.id)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do job na url");
+                if (!req.params.userId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
+                return jobs_model_1.Job.updateOne({ _id: req.params.id, usersWhoViewed: { $ne: req.params.userId } }, { $push: { usersWhoViewed: mongoose.Types.ObjectId(req.params.userId) } }).then(job => {
+                    if (job.nModified == 0) {
+                        resp.status(400);
+                        return resp.json({ message: "Usuário já vizualizou vaga" });
+                    }
+                    else {
+                        return resp.json({ message: "Visualização adicionada com sucesso" });
+                    }
+                }).catch(next);
             }).catch(next);
         };
         this.candidateUser = (req, resp, next) => {
-            if (!req.params.id)
-                throw new restify_errors_1.BadRequestError("Necessário enviar id do job na url");
-            if (!req.params.userId)
-                throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
-            const jobId = mongoose.Types.ObjectId(req.params.id);
-            const userId = mongoose.Types.ObjectId(req.params.userId);
-            jobs_model_1.Job.findById(jobId).then(job => {
-                if (!job)
-                    throw new restify_errors_1.NotFoundError("Job não localizado");
-                return jobs_model_1.Job.updateOne({ _id: jobId, cadidateUsers: { $ne: userId } }, { $push: { cadidateUsers: userId } }).then(modified => {
-                    if (modified.nModified == 0) {
-                        resp.status(400);
-                        return resp.json({ message: "Usuário já está candidatado à vaga" });
-                    }
-                    else {
-                        console.log("Pode cadastrar exame??", job.examConfig && job.examConfig.length > 0);
-                        if (job.examConfig && job.examConfig.length > 0) {
-                            return exams_model_1.Exam.findOne({ jobId: jobId }).then((exam) => __awaiter(this, void 0, void 0, function* () {
-                                const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: null, doneAt: null };
-                                for (let index = 0; index < job.examConfig.length; index++) {
-                                    const element = job.examConfig[index];
-                                    yield questions_model_1.Question.aggregate([{ $match: { skills: element.skill, difficulty: job.difficulty } }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
-                                        console.log("RANDOM IDS QUESTIONS=", randomQuestion);
-                                        candidateControll.questions.push(...randomQuestion.map(f => {
-                                            const question = { questionId: f._id };
-                                            return question;
-                                        }));
-                                    }).catch(next);
-                                }
-                                console.log("CANDIDATE CONTROLL", candidateControll);
-                                if (exam) {
-                                    //registerUser in exam
-                                    //@ts-ignore
-                                    exam.candidateControll.push(candidateControll);
-                                    exam.save().then(exam => {
-                                        return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" });
-                                    }).catch(next);
-                                }
-                                else {
-                                    const exam = new exams_model_1.Exam();
-                                    exam.jobId = jobId;
-                                    //@ts-ignore
-                                    exam.candidateControll = [candidateControll];
-                                    exam.save().then(exam => {
-                                        return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" });
-                                    }).catch(next);
-                                }
-                            })).catch(next);
+            new Promise((res, rejct) => {
+                if (!req.params.id)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do job na url");
+                if (!req.params.userId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
+                const jobId = mongoose.Types.ObjectId(req.params.id);
+                const userId = mongoose.Types.ObjectId(req.params.userId);
+                jobs_model_1.Job.findById(jobId).then(job => {
+                    if (!job)
+                        throw new restify_errors_1.NotFoundError("Job não localizado");
+                    return jobs_model_1.Job.updateOne({ _id: jobId, cadidateUsers: { $ne: userId } }, { $push: { cadidateUsers: userId } }).then(modified => {
+                        if (modified.nModified == 0) {
+                            resp.status(400);
+                            return resp.json({ message: "Usuário já está candidatado à vaga" });
                         }
                         else {
-                            return resp.json({ message: "Usuário candidatado com sucesso" });
+                            console.log("Pode cadastrar exame??", job.examConfig && job.examConfig.length > 0);
+                            if (job.examConfig && job.examConfig.length > 0) {
+                                return exams_model_1.Exam.findOne({ jobId: jobId }).then((exam) => __awaiter(this, void 0, void 0, function* () {
+                                    const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: null, doneAt: null };
+                                    for (let index = 0; index < job.examConfig.length; index++) {
+                                        const element = job.examConfig[index];
+                                        yield questions_model_1.Question.aggregate([{ $match: { skills: element.skill, difficulty: job.difficulty } }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
+                                            console.log("RANDOM IDS QUESTIONS=", randomQuestion);
+                                            candidateControll.questions.push(...randomQuestion.map(f => {
+                                                const question = { questionId: f._id };
+                                                return question;
+                                            }));
+                                        }).catch(next);
+                                    }
+                                    console.log("CANDIDATE CONTROLL", candidateControll);
+                                    if (exam) {
+                                        //registerUser in exam
+                                        //@ts-ignore
+                                        exam.candidateControll.push(candidateControll);
+                                        exam.save().then(exam => {
+                                            return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" });
+                                        }).catch(next);
+                                    }
+                                    else {
+                                        const exam = new exams_model_1.Exam();
+                                        exam.jobId = jobId;
+                                        //@ts-ignore
+                                        exam.candidateControll = [candidateControll];
+                                        exam.save().then(exam => {
+                                            return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" });
+                                        }).catch(next);
+                                    }
+                                })).catch(next);
+                            }
+                            else {
+                                return resp.json({ message: "Usuário candidatado com sucesso" });
+                            }
                         }
-                    }
+                    }).catch(next);
                 }).catch(next);
             }).catch(next);
         };

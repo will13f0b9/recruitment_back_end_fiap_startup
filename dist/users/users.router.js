@@ -36,15 +36,17 @@ class UsersRouter extends model_router_1.ModelRouter {
             }).catch(next);
         };
         this.addNewCompanyToPreviousRecruiter = (req, resp, next) => {
-            if (!req.params.userId)
-                throw new restify_errors_1.BadRequestError("Necessário enviar userId na url");
-            if (!req.body)
-                throw new restify_errors_1.BadRequestError("Necessário enviar um body na requisição");
-            if (!req.body.companyId)
-                throw new restify_errors_1.BadRequestError("Necessário enviar companyId no body da requisição");
-            console.log(`PUSH COMPANYID=${req.body.companyId} TO USERID=${req.params.userId}`);
-            users_model_1.User.findOneAndUpdate({ _id: mongoose.Types.ObjectId(req.params.userId) }, { "$push": { "companies": req.body.companyId } }).then(next).catch(next);
-            return resp.json();
+            new Promise((res, rejct) => {
+                if (!req.params.userId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar userId na url");
+                if (!req.body)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar um body na requisição");
+                if (!req.body.companyId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar companyId no body da requisição");
+                console.log(`PUSH COMPANYID=${req.body.companyId} TO USERID=${req.params.userId}`);
+                users_model_1.User.findOneAndUpdate({ _id: mongoose.Types.ObjectId(req.params.userId) }, { "$push": { "companies": req.body.companyId } }).then(next).catch(next);
+                return resp.json();
+            }).catch(next);
         };
         this.on('beforeRender', document => {
             document.password = undefined;
