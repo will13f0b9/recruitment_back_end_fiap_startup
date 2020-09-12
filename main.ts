@@ -7,6 +7,7 @@ import { plansRouter } from './plans/plans.router'
 import { jobsRouter } from './jobs/jobs.router'
 import { companiesRouter } from './companies/companies.router'
 import { questionRouter } from './questions/questions.router'
+import { examRouter } from './exams/exams.router'
 
 const server = new Server()
 server.bootstrap([
@@ -17,7 +18,8 @@ server.bootstrap([
   plansRouter,
   jobsRouter,
   companiesRouter,
-  questionRouter
+  questionRouter,
+  examRouter
 ]).then(server=>{
   console.log('Server is listening on:', server.application.address())
 }).catch(error=>{

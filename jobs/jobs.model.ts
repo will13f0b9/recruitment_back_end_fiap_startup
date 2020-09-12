@@ -2,26 +2,46 @@ import * as mongoose from 'mongoose'
 import { User } from '../users/users.model'
 import { Company } from '../companies/companies.model'
 
+
+export interface ExamConfig extends mongoose.Document {
+  skill: string,
+  quantity: number
+}
+
+const examConfigSchema = new mongoose.Schema({
+  skill: {
+    type: String,
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true
+  }
+})
+
+
 export interface Job extends mongoose.Document {
   city: string,
   state: string,
   address: string,
-  company: mongoose.Types.ObjectId | Company,//todo mudar any para company model dps
+  owner: mongoose.Types.ObjectId | User,
+  company: mongoose.Types.ObjectId | Company,
   openPositions: number,
   requiredSkills: string[],
   desirableSkills: string[],
-  cadidateUsers: [mongoose.Types.ObjectId | User],
-  usersWhoViewed: [mongoose.Types.ObjectId | User],
+  cadidateUsers: mongoose.Types.ObjectId[] | User[],
+  usersWhoViewed: mongoose.Types.ObjectId[] | User[],
   title: string,
   anotherInfo: string,
   description: string,
   salary: number,
   hiring: string,
-  questions: [mongoose.Types.ObjectId | any],//todo mudar any para company model dps
   lastUpdateDate: Date,
   registerDate: Date,
   benefits: string[],
-  difficulty: string[]
+  difficulty: string[],
+  done: boolean,
+  examConfig: ExamConfig[],
 }
 
 const restSchema = new mongoose.Schema({
@@ -36,6 +56,11 @@ const restSchema = new mongoose.Schema({
   address: {
     type: String,
     required: false
+  },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
   },
   company: {
     type: mongoose.Schema.Types.ObjectId,
@@ -105,7 +130,14 @@ const restSchema = new mongoose.Schema({
     type: [String],
     required: true,
     enum: ["STAGE","JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
-  }
+  },
+  done: {
+    type: Boolean
+  },
+  examConfig: {
+    type: [examConfigSchema],
+    required: false
+  },
 })
 
 

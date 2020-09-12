@@ -37,11 +37,11 @@ class UsersRouter extends model_router_1.ModelRouter {
         };
         this.addNewCompanyToPreviousRecruiter = (req, resp, next) => {
             if (!req.params.userId)
-                return new restify_errors_1.BadRequestError("Necessário enviar userId na url");
+                throw new restify_errors_1.BadRequestError("Necessário enviar userId na url");
             if (!req.body)
-                return new restify_errors_1.BadRequestError("Necessário enviar um body na requisição");
+                throw new restify_errors_1.BadRequestError("Necessário enviar um body na requisição");
             if (!req.body.companyId)
-                return new restify_errors_1.BadRequestError("Necessário enviar companyId no body da requisição");
+                throw new restify_errors_1.BadRequestError("Necessário enviar companyId no body da requisição");
             console.log(`PUSH COMPANYID=${req.body.companyId} TO USERID=${req.params.userId}`);
             users_model_1.User.findOneAndUpdate({ _id: mongoose.Types.ObjectId(req.params.userId) }, { "$push": { "companies": req.body.companyId } }).then(next).catch(next);
             return resp.json();

@@ -9,6 +9,7 @@ const plans_router_1 = require("./plans/plans.router");
 const jobs_router_1 = require("./jobs/jobs.router");
 const companies_router_1 = require("./companies/companies.router");
 const questions_router_1 = require("./questions/questions.router");
+const exams_router_1 = require("./exams/exams.router");
 const server = new server_1.Server();
 server.bootstrap([
     users_router_1.usersRouter,
@@ -18,7 +19,8 @@ server.bootstrap([
     plans_router_1.plansRouter,
     jobs_router_1.jobsRouter,
     companies_router_1.companiesRouter,
-    questions_router_1.questionRouter
+    questions_router_1.questionRouter,
+    exams_router_1.examRouter
 ]).then(server => {
     console.log('Server is listening on:', server.application.address());
 }).catch(error => {

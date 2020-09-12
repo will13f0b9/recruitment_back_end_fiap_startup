@@ -11,7 +11,8 @@ class MainRouter extends Router {
         certifications: '/certifications',
         plans: '/plans',
         companies: "/companies",
-        questions: "/questions"
+        questions: "/questions",
+        exams: "/exams"
       })
     })
   }

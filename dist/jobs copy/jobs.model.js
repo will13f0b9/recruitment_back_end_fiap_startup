@@ -1,16 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose = require("mongoose");
-const examConfigSchema = new mongoose.Schema({
-    skill: {
-        type: String,
-        required: true
-    },
-    quantity: {
-        type: Number,
-        required: true
-    }
-});
 const restSchema = new mongoose.Schema({
     city: {
         type: String,
@@ -23,11 +13,6 @@ const restSchema = new mongoose.Schema({
     address: {
         type: String,
         required: false
-    },
-    owner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
     },
     company: {
         type: mongoose.Schema.Types.ObjectId,
@@ -97,13 +82,6 @@ const restSchema = new mongoose.Schema({
         type: [String],
         required: true,
         enum: ["STAGE", "JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
-    },
-    done: {
-        type: Boolean
-    },
-    examConfig: {
-        type: [examConfigSchema],
-        required: false
-    },
+    }
 });
 exports.Job = mongoose.model('Job', restSchema);
