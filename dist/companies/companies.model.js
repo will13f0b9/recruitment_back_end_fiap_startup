@@ -48,6 +48,11 @@ const restSchema = new mongoose.Schema({
         unique: false,
         match: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
         required: false
+    },
+    plan: {
+        type: mongoose.Types.ObjectId,
+        ref: "Plan",
+        required: true
     }
 });
 restSchema.statics.findByCnpj = function (cnpj, projection) {

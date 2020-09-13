@@ -1,6 +1,7 @@
 import * as mongoose from 'mongoose'
 import * as bcrypt from 'bcrypt'
-import {environment} from '../common/environment'
+import { environment } from '../common/environment'
+import { Plan } from '../plans/plans.model'
 
 export interface Company extends mongoose.Document {
   name: string,
@@ -12,6 +13,7 @@ export interface Company extends mongoose.Document {
   email: string,
   lastUpdateDate: Date,
   registerDate: Date,
+  plan: mongoose.Types.ObjectId | Plan,
   matches(password: string): boolean
 }
 
@@ -46,13 +48,13 @@ const restSchema = new mongoose.Schema({
     type: Date,
     //ref: 'company',
     required: false,
-    default: ()=> new Date()
+    default: () => new Date()
   },
   registerDate: {
     type: Date,
     //ref: 'company',
     required: false,
-    default: ()=> new Date()
+    default: () => new Date()
   },
   password: {
     type: String,
@@ -64,40 +66,45 @@ const restSchema = new mongoose.Schema({
     unique: false,
     match: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
     required: false
+  },
+  plan: {
+    type: mongoose.Types.ObjectId,
+    ref: "Plan",
+    required: true
   }
 })
 
 
 
-restSchema.statics.findByCnpj = function(cnpj: string, projection: string){
-  return this.findOne({cnpj}, projection) //{email: email}
+restSchema.statics.findByCnpj = function (cnpj: string, projection: string) {
+  return this.findOne({ cnpj }, projection) //{email: email}
 }
 
-restSchema.methods.matches = function(password: string): boolean {
+restSchema.methods.matches = function (password: string): boolean {
   return bcrypt.compareSync(password, this.password)
 }
 
-const hashPassword = (obj, next)=>{
+const hashPassword = (obj, next) => {
   bcrypt.hash(obj.password, environment.security.saltRounds)
-        .then(hash=>{
-          obj.password = hash
-          next()
-        }).catch(next)
+    .then(hash => {
+      obj.password = hash
+      next()
+    }).catch(next)
 }
 
-const saveMiddleware = function (next){
+const saveMiddleware = function (next) {
   const company: Company = this
-  if(!company.isModified('password')){
+  if (!company.isModified('password')) {
     next()
-  }else{
+  } else {
     hashPassword(company, next)
   }
 }
 
-const updateMiddleware = function (next){
-  if(!this.getUpdate().password){
+const updateMiddleware = function (next) {
+  if (!this.getUpdate().password) {
     next()
-  }else{
+  } else {
     hashPassword(this.getUpdate(), next)
   }
 }
