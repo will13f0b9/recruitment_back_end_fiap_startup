@@ -7,7 +7,8 @@ export interface Question extends mongoose.Document {
   description: string,
   alternatives: Alternative[],
   registerDate: Date,
-  lastUpdateDate: Date
+  lastUpdateDate: Date,
+  correctQuestionId: string
 }
 
 export interface Alternative extends mongoose.Document {

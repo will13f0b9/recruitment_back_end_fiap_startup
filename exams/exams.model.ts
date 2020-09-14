@@ -26,7 +26,9 @@ export interface CandidateControll extends mongoose.Document {
   startedAt: Date,
   doneAt: Date,
   candidateId: mongoose.Types.ObjectId | User,
-  questions: Questions[]
+  questions: Questions[],
+  totalHits: number,
+  totalErrors: number
 }
 
 const candidateControllSchema = new mongoose.Schema({
@@ -49,6 +51,14 @@ const candidateControllSchema = new mongoose.Schema({
   questions: {
     type: [questionsSchema],
     required: true
+  },
+  totalHits: {
+    type: Number,
+    default: 0
+  },
+  totalErrors: {
+    type: Number,
+    default: 0
   }
 })
 

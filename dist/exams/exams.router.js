@@ -37,19 +37,40 @@ class ExamRouter extends model_router_1.ModelRouter {
                     throw new restify_errors_1.BadRequestError("Necessário enviar id do job na url");
                 if (!req.params.userId)
                     throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
+                console.log("FINISH EXAM TO USER");
                 const jobId = mongoose.Types.ObjectId(req.params.id);
                 const userId = mongoose.Types.ObjectId(req.params.userId);
-                exams_model_1.Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId, 'candidateControll.doneAt': null }).then(exam => {
+                const forceDone = req.query.forceDone;
+                exams_model_1.Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId, 'candidateControll.doneAt': null })
+                    .populate("candidateControll.questions.questionId", ["description", "title", "alternatives", "correctQuestionId"])
+                    .then(exam => {
+                    console.log("exam", exam);
                     if (!exam)
                         throw new restify_errors_1.NotFoundError("Exame não localizado ou já finalizado para o usuário!");
+                    let success = 0;
+                    let error = 0;
                     exam.candidateControll = exam.candidateControll.filter(f => {
                         return f.candidateId.toString() === req.params.userId;
                     });
                     exam.candidateControll.forEach(f => {
+                        f.questions.forEach(q => {
+                            let correctQuestion = false;
+                            const question = q.questionId;
+                            if (!q.answer && !forceDone)
+                                throw new restify_errors_1.BadRequestError("Faltam responder questões para finalizar o exame!");
+                            if (q.answer === question.correctQuestionId) {
+                                success += 1;
+                            }
+                            else {
+                                error += 1;
+                            }
+                        });
+                        f.totalHits = success;
+                        f.totalErrors = error;
                         f.doneAt = new Date();
                     });
                     exam.save().catch(next);
-                    return resp.send(200);
+                    return resp.json({ totalHits: success, totalErrors: error });
                 }).catch(next);
             }).catch(next);
         };

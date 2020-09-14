@@ -33,6 +33,14 @@ const candidateControllSchema = new mongoose.Schema({
     questions: {
         type: [questionsSchema],
         required: true
+    },
+    totalHits: {
+        type: Number,
+        default: 0
+    },
+    totalErrors: {
+        type: Number,
+        default: 0
     }
 });
 const restSchema = new mongoose.Schema({
