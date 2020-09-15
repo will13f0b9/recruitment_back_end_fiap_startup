@@ -15,7 +15,8 @@ export interface User extends mongoose.Document {
   dateOfBirth: Date,
   description: string,
   matches(password: string): boolean,
-  hasAny(...profiles: string[]): boolean
+  hasAny(...profiles: string[]): boolean,
+  curriculum: string
 }
 
 export interface UserModel extends mongoose.Model<User> {
@@ -68,6 +69,10 @@ const userSchema = new mongoose.Schema({
     required: false
   },
   description: {
+    type: String,
+    required: false
+  },
+  curriculum: {
     type: String,
     required: false
   }

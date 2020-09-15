@@ -5,6 +5,8 @@ const restify_errors_1 = require("restify-errors");
 const users_model_1 = require("./users.model");
 const auth_handler_1 = require("../security/auth.handler");
 const mongoose = require("mongoose");
+const fs = require("fs");
+const { gzip, ungzip } = require('node-gzip');
 class UsersRouter extends model_router_1.ModelRouter {
     constructor() {
         super(users_model_1.User);
@@ -48,6 +50,25 @@ class UsersRouter extends model_router_1.ModelRouter {
                 return resp.json();
             }).catch(next);
         };
+        this.uploadCurriculum = (req, resp, next) => {
+            // req.files.curriculum.name  | req.files.curriculum.path | req.files.curriculum.type
+            new Promise((res, rejct) => {
+                if (!req.params.id)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na uri");
+                if (!req.files)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar formData no corpo da requisição");
+                if (!req.files.curriculum)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar formData com 'curriculum' de pdf do usuário no corpo da requisição");
+                users_model_1.User.findById(req.params.id).then(user => {
+                    if (!user)
+                        throw new restify_errors_1.NotFoundError(`Usuário de id: ${req.params.id} não localizado`);
+                    const fileB64 = fs.readFileSync(req.files.curriculum.path).toString("base64");
+                    user.curriculum = fileB64;
+                    user.save().catch(next);
+                    return resp.json({ message: "Curriculum salvo com sucesso!" });
+                }).catch(next);
+            }).catch(next);
+        };
         this.on('beforeRender', document => {
             document.password = undefined;
             //delete document.password
@@ -61,6 +82,7 @@ class UsersRouter extends model_router_1.ModelRouter {
         application.put(`${this.basePath}/:id`, [this.validateId, this.replace]);
         application.patch(`${this.basePath}/:id`, [this.validateId, this.update]);
         application.del(`${this.basePath}/:id`, [this.validateId, this.delete]);
+        application.post(`${this.basePath}/:id/curriculum`, [this.uploadCurriculum]);
         application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter]);
         application.post(`${this.basePath}/authenticate`, auth_handler_1.authenticate);
     }

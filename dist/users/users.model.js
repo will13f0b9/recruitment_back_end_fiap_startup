@@ -52,6 +52,10 @@ const userSchema = new mongoose.Schema({
     description: {
         type: String,
         required: false
+    },
+    curriculum: {
+        type: String,
+        required: false
     }
 });
 userSchema.statics.findByEmail = function (email, projection) {

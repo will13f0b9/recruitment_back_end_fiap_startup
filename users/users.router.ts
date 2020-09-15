@@ -5,6 +5,8 @@ import { User } from './users.model'
 import { authenticate } from '../security/auth.handler'
 import { authorize } from '../security/authz.handler'
 import * as mongoose from 'mongoose'
+import * as fs from 'fs';
+const { gzip, ungzip } = require('node-gzip');
 
 
 class UsersRouter extends ModelRouter<User> {
@@ -55,6 +57,22 @@ class UsersRouter extends ModelRouter<User> {
     }).catch(next);
   }
 
+  uploadCurriculum = (req, resp, next) => {
+    // req.files.curriculum.name  | req.files.curriculum.path | req.files.curriculum.type
+    new Promise((res, rejct) => {
+      if (!req.params.id) throw new BadRequestError("Necessário enviar id do usuário na uri")
+      if (!req.files) throw new BadRequestError("Necessário enviar formData no corpo da requisição")
+      if (!req.files.curriculum) throw new BadRequestError("Necessário enviar formData com 'curriculum' de pdf do usuário no corpo da requisição")
+      User.findById(req.params.id).then(user => {
+        if (!user) throw new NotFoundError(`Usuário de id: ${req.params.id} não localizado`);
+        const fileB64 = fs.readFileSync(req.files.curriculum.path).toString("base64");
+        user.curriculum = fileB64;
+        user.save().catch(next);
+        return resp.json({message: "Curriculum salvo com sucesso!"});
+      }).catch(next)
+    }).catch(next);
+  }
+
   applyRoutes(application: restify.Server) {
 
     application.get({ path: `${this.basePath}`, version: '2.0.0' }, [this.findByEmail, this.findAll])
@@ -64,6 +82,7 @@ class UsersRouter extends ModelRouter<User> {
     application.put(`${this.basePath}/:id`, [this.validateId, this.replace])
     application.patch(`${this.basePath}/:id`, [this.validateId, this.update])
     application.del(`${this.basePath}/:id`, [this.validateId, this.delete])
+    application.post(`${this.basePath}/:id/curriculum`, [this.uploadCurriculum])
 
     application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter])
 
