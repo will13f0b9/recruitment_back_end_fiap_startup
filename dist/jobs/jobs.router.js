@@ -119,7 +119,7 @@ class JobsRouter extends model_router_1.ModelRouter {
     }
     prepareOne(query) {
         console.log('preapre');
-        return query.populate('company', 'name');
+        return query.populate('company', 'name description');
     }
     applyRoutes(application) {
         application.get(`${this.basePath}`, [this.findByFilters, this.findAllPopulate]);

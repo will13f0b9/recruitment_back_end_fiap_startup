@@ -15,7 +15,7 @@ class JobsRouter extends ModelRouter<Job> {
 
   protected prepareOne(query: mongoose.DocumentQuery<Job, Job>): mongoose.DocumentQuery<Job, Job> {
     console.log('preapre')
-    return query.populate('company', 'name')
+    return query.populate('company', 'name description')
   }
 
   findAllPopulate = (req, resp, next) => {
