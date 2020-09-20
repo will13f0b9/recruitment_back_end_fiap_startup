@@ -21,7 +21,7 @@ export const authenticate: restify.RequestHandler = (req, resp, next) => {
           if (user.profiles.indexOf("CANDIDATE") != -1) {
             candidateInfos(user, token, resp, next)
           } else {
-            recruiterInfos(resp, user, token,next)
+            recruiterInfos(resp, user, token, next)
           }
 
           return next(false)
@@ -106,7 +106,7 @@ function candidateInfos(user: User, token: string, resp: restify.Response, next:
       const qntdVagas = jobs.length
       const data = {
         userInfo: {
-          userId: user._id, name: user.name, email: user.email, profiles: user.profiles,
+          userId: user._id, name: user.name, email: user.email, profiles: user.profiles, curriculum: user.curriculum ? true : false,
           cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
         },
         dashInfo: { totalJobsSubscribe: qntdVagas }

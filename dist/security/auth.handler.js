@@ -105,7 +105,7 @@ function candidateInfos(user, token, resp, next) {
         const qntdVagas = jobs.length;
         const data = {
             userInfo: {
-                userId: user._id, name: user.name, email: user.email, profiles: user.profiles,
+                userId: user._id, name: user.name, email: user.email, profiles: user.profiles, curriculum: user.curriculum ? true : false,
                 cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
             },
             dashInfo: { totalJobsSubscribe: qntdVagas }
