@@ -6,6 +6,8 @@ import { authenticate } from '../security/auth.handler'
 import { authorize } from '../security/authz.handler'
 import * as mongoose from 'mongoose'
 import * as fs from 'fs';
+import { jobsRouter } from '../jobs/jobs.router'
+import { Job } from '../jobs/jobs.model'
 const { gzip, ungzip } = require('node-gzip');
 
 
@@ -68,15 +70,44 @@ class UsersRouter extends ModelRouter<User> {
         const fileB64 = fs.readFileSync(req.files.curriculum.path).toString("base64");
         user.curriculum = fileB64;
         user.save().catch(next);
-        return resp.json({message: "Curriculum salvo com sucesso!"});
+        return resp.json({ message: "Curriculum salvo com sucesso!" });
       }).catch(next)
     }).catch(next);
+  }
+
+  findByCompanyId = (req, resp, next) => {
+    if (req.params && req.params.companyId) {
+      console.log('COMPANIE')
+      User.find({ 'companies': req.params.companyId }).lean()
+        .then(user => user ? user : [])
+        .then(async users => {
+          console.log('COMPANIES USERS', users.length)
+          for (const user of users) {
+            const totalJobs = await Job.find({ owner: user._id })
+            console.log(totalJobs.length);
+            user['totalJobsPublished'] = totalJobs.length;
+            user['totalJobsActived'] = 0;
+            console.log(user)
+            totalJobs.forEach(j => {
+              if (!j.done) {
+                user['totalJobsActived'] += 1
+              }
+            })
+          }
+          console.log(users)
+          return resp.json(users)
+        })
+        .catch(next)
+    } else {
+      next()
+    }
   }
 
   applyRoutes(application: restify.Server) {
 
     application.get({ path: `${this.basePath}`, version: '2.0.0' }, [this.findByEmail, this.findAll])
     application.get({ path: `${this.basePath}`, version: '1.0.0' }, [this.findAll])
+    application.get({ path: `${this.basePath}/companies/:companyId` }, [this.findByCompanyId])
     application.get(`${this.basePath}/:id`, [this.validateId, this.findById])
     application.post(`${this.basePath}`, [this.populateCompany, this.save])
     application.put(`${this.basePath}/:id`, [this.validateId, this.replace])

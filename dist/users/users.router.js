@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const model_router_1 = require("../common/model-router");
 const restify_errors_1 = require("restify-errors");
@@ -6,6 +15,7 @@ const users_model_1 = require("./users.model");
 const auth_handler_1 = require("../security/auth.handler");
 const mongoose = require("mongoose");
 const fs = require("fs");
+const jobs_model_1 = require("../jobs/jobs.model");
 const { gzip, ungzip } = require('node-gzip');
 class UsersRouter extends model_router_1.ModelRouter {
     constructor() {
@@ -69,6 +79,34 @@ class UsersRouter extends model_router_1.ModelRouter {
                 }).catch(next);
             }).catch(next);
         };
+        this.findByCompanyId = (req, resp, next) => {
+            if (req.params && req.params.companyId) {
+                console.log('COMPANIE');
+                users_model_1.User.find({ 'companies': req.params.companyId }).lean()
+                    .then(user => user ? user : [])
+                    .then((users) => __awaiter(this, void 0, void 0, function* () {
+                    console.log('COMPANIES USERS', users.length);
+                    for (const user of users) {
+                        const totalJobs = yield jobs_model_1.Job.find({ owner: user._id });
+                        console.log(totalJobs.length);
+                        user['totalJobsPublished'] = totalJobs.length;
+                        user['totalJobsActived'] = 0;
+                        console.log(user);
+                        totalJobs.forEach(j => {
+                            if (!j.done) {
+                                user['totalJobsActived'] += 1;
+                            }
+                        });
+                    }
+                    console.log(users);
+                    return resp.json(users);
+                }))
+                    .catch(next);
+            }
+            else {
+                next();
+            }
+        };
         this.on('beforeRender', document => {
             document.password = undefined;
             //delete document.password
@@ -77,6 +115,7 @@ class UsersRouter extends model_router_1.ModelRouter {
     applyRoutes(application) {
         application.get({ path: `${this.basePath}`, version: '2.0.0' }, [this.findByEmail, this.findAll]);
         application.get({ path: `${this.basePath}`, version: '1.0.0' }, [this.findAll]);
+        application.get({ path: `${this.basePath}/companies/:companyId` }, [this.findByCompanyId]);
         application.get(`${this.basePath}/:id`, [this.validateId, this.findById]);
         application.post(`${this.basePath}`, [this.populateCompany, this.save]);
         application.put(`${this.basePath}/:id`, [this.validateId, this.replace]);
