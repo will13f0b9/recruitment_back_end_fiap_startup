@@ -1,6 +1,6 @@
 import * as restify from 'restify'
 import * as jwt from 'jsonwebtoken'
-import { NotAuthorizedError, BadRequestError } from 'restify-errors'
+import { NotAuthorizedError, BadRequestError, ForbiddenError } from 'restify-errors'
 import { User } from '../users/users.model'
 import { environment } from '../common/environment'
 import { Company } from '../companies/companies.model'
@@ -13,20 +13,23 @@ export const authenticate: restify.RequestHandler = (req, resp, next) => {
     User.findByEmail(email, '+password') //1st
       .then(user => {
         if (user && user.matches(password)) { //2nd
-          //gerar o token
-          //3rd
+      
           console.log("=================================================  USER ")
           const token = jwt.sign({ sub: user.email, iss: 'meat-api' },
             environment.security.apiSecret)
-          if (user.profiles.indexOf("CANDIDATE") != -1) {
-            candidateInfos(user, token, resp, next)
-          } else {
-            recruiterInfos(resp, user, token, next)
-          }
+            if(!user.blocked){
+              if (user.profiles.indexOf("CANDIDATE") != -1) {
+                candidateInfos(user, token, resp, next)
+              } else {
+                recruiterInfos(resp, user, token, next)
+              }
+            }else{
+              return next(new ForbiddenError('Usuário bloqueado'))    
+            }
 
           return next(false)
         } else {
-          return next(new NotAuthorizedError('Invalid Credentials'))
+          return next(new NotAuthorizedError('Crendênciais inválidas'))
         }
       }).catch(next)
   } else if (cnpj) {
@@ -43,11 +46,11 @@ export const authenticate: restify.RequestHandler = (req, resp, next) => {
           })
           return next(false)
         } else {
-          return next(new NotAuthorizedError('Invalid Credentials'))
+          return next(new NotAuthorizedError('Crendênciais inválidas'))
         }
       }).catch(next)
   } else {
-    return next(new BadRequestError('Invalid properties'))
+    return next(new BadRequestError('Dados inválidos'))
   }
 }
 function recruiterInfos(resp: restify.Response, user: User, token: string, next: restify.Next) {

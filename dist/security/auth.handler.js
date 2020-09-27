@@ -13,20 +13,23 @@ exports.authenticate = (req, resp, next) => {
         users_model_1.User.findByEmail(email, '+password') //1st
             .then(user => {
             if (user && user.matches(password)) { //2nd
-                //gerar o token
-                //3rd
                 console.log("=================================================  USER ");
                 const token = jwt.sign({ sub: user.email, iss: 'meat-api' }, environment_1.environment.security.apiSecret);
-                if (user.profiles.indexOf("CANDIDATE") != -1) {
-                    candidateInfos(user, token, resp, next);
+                if (!user.blocked) {
+                    if (user.profiles.indexOf("CANDIDATE") != -1) {
+                        candidateInfos(user, token, resp, next);
+                    }
+                    else {
+                        recruiterInfos(resp, user, token, next);
+                    }
                 }
                 else {
-                    recruiterInfos(resp, user, token, next);
+                    return next(new restify_errors_1.ForbiddenError('Usuário bloqueado'));
                 }
                 return next(false);
             }
             else {
-                return next(new restify_errors_1.NotAuthorizedError('Invalid Credentials'));
+                return next(new restify_errors_1.NotAuthorizedError('Crendênciais inválidas'));
             }
         }).catch(next);
     }
@@ -45,12 +48,12 @@ exports.authenticate = (req, resp, next) => {
                 return next(false);
             }
             else {
-                return next(new restify_errors_1.NotAuthorizedError('Invalid Credentials'));
+                return next(new restify_errors_1.NotAuthorizedError('Crendênciais inválidas'));
             }
         }).catch(next);
     }
     else {
-        return next(new restify_errors_1.BadRequestError('Invalid properties'));
+        return next(new restify_errors_1.BadRequestError('Dados inválidos'));
     }
 };
 function recruiterInfos(resp, user, token, next) {
