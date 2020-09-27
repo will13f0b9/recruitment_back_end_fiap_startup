@@ -54,7 +54,7 @@ class UsersRouter extends ModelRouter<User> {
       if (!req.body) throw new BadRequestError("Necessário enviar um body na requisição");
       if (!req.body.companyId) throw new BadRequestError("Necessário enviar companyId no body da requisição");
       console.log(`PUSH COMPANYID=${req.body.companyId} TO USERID=${req.params.userId}`)
-      User.findOneAndUpdate({ _id: mongoose.Types.ObjectId(req.params.userId) }, { "$push": { "companies": req.body.companyId } }).then(next).catch(next);
+      User.findOneAndUpdate({ _id: mongoose.Types.ObjectId(req.params.userId) }, { "$push": { "companies": req.body.companyId} }).then(next).catch(next);
       return resp.json()
     }).catch(next);
   }

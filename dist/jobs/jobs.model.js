@@ -99,7 +99,8 @@ const restSchema = new mongoose.Schema({
         enum: ["STAGE", "JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
     },
     done: {
-        type: Boolean
+        type: Boolean,
+        default: false
     },
     examConfig: {
         type: [examConfigSchema],
