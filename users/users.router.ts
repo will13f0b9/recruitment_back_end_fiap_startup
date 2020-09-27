@@ -78,12 +78,12 @@ class UsersRouter extends ModelRouter<User> {
   findByCompanyId = (req, resp, next) => {
     if (req.params && req.params.companyId) {
       console.log('COMPANIE')
-      User.find({ 'companies': req.params.companyId }).lean()
+      User.find({ 'companies': req.params.companyId }, {curriculum: 0}).lean()
         .then(user => user ? user : [])
         .then(async users => {
           console.log('COMPANIES USERS', users.length)
           for (const user of users) {
-            const totalJobs = await Job.find({ owner: user._id })
+            const totalJobs = await Job.find({ owner: user._id, company: req.params.companyId})
             console.log(totalJobs.length);
             user['totalJobsPublished'] = totalJobs.length;
             user['totalJobsActived'] = 0;
