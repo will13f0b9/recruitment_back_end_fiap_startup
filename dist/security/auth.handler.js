@@ -42,6 +42,7 @@ exports.authenticate = (req, resp, next) => {
                 const token = jwt.sign({ sub: company.email, iss: 'meat-api' }, environment_1.environment.security.apiSecret);
                 console.log(company);
                 resp.json({
+                    plan: company.plan,
                     companyId: company._id, description: company.description, lastUpdateDate: company.lastUpdateDate,
                     location: company.location, registerDate: company.registerDate, name: company.name, email: company.email, cnpj: company.cnpj, accessToken: token
                 });
