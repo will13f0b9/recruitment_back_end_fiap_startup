@@ -5,27 +5,33 @@ import { User } from '../users/users.model'
 import { environment } from '../common/environment'
 import { Company } from '../companies/companies.model'
 import { Job } from '../jobs/jobs.model'
+import * as mongoose from 'mongoose'
+
+// const prepareOne = (query: mongoose.DocumentQuery<User, User>): mongoose.DocumentQuery<User, User> => {
+//   console.log('preapre')
+//   return query.populate('company', 'name description')
+// }
 
 export const authenticate: restify.RequestHandler = (req, resp, next) => {
   console.log("AUTHENTICATE");
   const { email, password, cnpj } = req.body
   if (email) {
-    User.findByEmail(email, '+password') //1st
+    User.findOne({ email }, '+password').populate('companies', 'name description', Company) //1st
       .then(user => {
         if (user && user.matches(password)) { //2nd
-      
+
           console.log("=================================================  USER ")
           const token = jwt.sign({ sub: user.email, iss: 'meat-api' },
             environment.security.apiSecret)
-            if(!user.blocked){
-              if (user.profiles.indexOf("CANDIDATE") != -1) {
-                candidateInfos(user, token, resp, next)
-              } else {
-                recruiterInfos(resp, user, token, next)
-              }
-            }else{
-              return next(new ForbiddenError('Usuário bloqueado'))    
+          if (!user.blocked) {
+            if (user.profiles.indexOf("CANDIDATE") != -1) {
+              candidateInfos(user, token, resp, next)
+            } else {
+              recruiterInfos(resp, user, token, next)
             }
+          } else {
+            return next(new ForbiddenError('Usuário bloqueado'))
+          }
 
           return next(false)
         } else {
@@ -56,47 +62,53 @@ export const authenticate: restify.RequestHandler = (req, resp, next) => {
 }
 function recruiterInfos(resp: restify.Response, user: User, token: string, next: restify.Next) {
   console.log('RECRUITER')
-  let companiId;
-  if (user.companies && user.companies.length > 0) {
-    companiId = user.companies[0];
+  const userInfo = {
+    userInfo: {
+      companies: user.companies,
+      userId: user._id, name: user.name, email: user.email, profiles: user.profiles, curriculum: user.curriculum ? true : false,
+      cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
+    }
   }
+  return resp.json(userInfo);
 
-  Job.aggregate([
-    { $match: { "company": companiId } },
-    { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
-    { $project: { usersWhoViewed: 1, done: 1, cadidateUsers: 1, 'hiring': 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
-    { $sort: { cadidateUsers: 1 } }
-  ])
-    .then(jobs => {
-      const data = {
-        userInfo: {
-          userId: user._id, name: user.name, email: user.email, profiles: user.profiles, bussinessAccount: user.companies,
-          cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
-        },
-        dashInfo: { totalJobs: jobs.length }
-      }
-      jobs.forEach(f => {
-        let candidateDoneExams = 0
-        f.exams.forEach(e => {
-          const exam = {}
-          console.log("BEFORE FOREACH")
-          e.candidateControll.forEach(c => {
-            console.log("CANDIDATE FOR EC")
-            if (c.doneAt) {
-              candidateDoneExams++;
-            }
-          })
-        })
-        f['candidateDoneExam'] = candidateDoneExams;
-        f['usersWhoViewed'] = f.usersWhoViewed.length;
-        f['cadidateUsers'] = f.cadidateUsers.length;
-        delete f.exams
-      })
 
-      data.dashInfo['jobs'] = jobs;
 
-      resp.json(data);
-    }).catch(next);
+  // Job.aggregate([
+  //   { $match: { "company": companiId } },
+  //   { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
+  //   { $project: { usersWhoViewed: 1, done: 1, cadidateUsers: 1, 'hiring': 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+  //   { $sort: { cadidateUsers: 1 } }
+  // ])
+  //   .then(jobs => {
+  //     const data = {
+  //       userInfo: {
+  //         userId: user._id, name: user.name, email: user.email, profiles: user.profiles, bussinessAccount: user.companies,
+  //         cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
+  //       },
+  //       dashInfo: { totalJobs: jobs.length }
+  //     }
+  //     jobs.forEach(f => {
+  //       let candidateDoneExams = 0
+  //       f.exams.forEach(e => {
+  //         const exam = {}
+  //         console.log("BEFORE FOREACH")
+  //         e.candidateControll.forEach(c => {
+  //           console.log("CANDIDATE FOR EC")
+  //           if (c.doneAt) {
+  //             candidateDoneExams++;
+  //           }
+  //         })
+  //       })
+  //       f['candidateDoneExam'] = candidateDoneExams;
+  //       f['usersWhoViewed'] = f.usersWhoViewed.length;
+  //       f['cadidateUsers'] = f.cadidateUsers.length;
+  //       delete f.exams
+  //     })
+
+  //     data.dashInfo['jobs'] = jobs;
+
+  //     resp.json(data);
+  //   }).catch(next);
 }
 
 function candidateInfos(user: User, token: string, resp: restify.Response, next: restify.Next) {

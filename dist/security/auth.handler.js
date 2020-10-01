@@ -6,11 +6,15 @@ const users_model_1 = require("../users/users.model");
 const environment_1 = require("../common/environment");
 const companies_model_1 = require("../companies/companies.model");
 const jobs_model_1 = require("../jobs/jobs.model");
+// const prepareOne = (query: mongoose.DocumentQuery<User, User>): mongoose.DocumentQuery<User, User> => {
+//   console.log('preapre')
+//   return query.populate('company', 'name description')
+// }
 exports.authenticate = (req, resp, next) => {
     console.log("AUTHENTICATE");
     const { email, password, cnpj } = req.body;
     if (email) {
-        users_model_1.User.findByEmail(email, '+password') //1st
+        users_model_1.User.findOne({ email }, '+password').populate('companies', 'name description', companies_model_1.Company) //1st
             .then(user => {
             if (user && user.matches(password)) { //2nd
                 console.log("=================================================  USER ");
@@ -59,44 +63,48 @@ exports.authenticate = (req, resp, next) => {
 };
 function recruiterInfos(resp, user, token, next) {
     console.log('RECRUITER');
-    let companiId;
-    if (user.companies && user.companies.length > 0) {
-        companiId = user.companies[0];
-    }
-    jobs_model_1.Job.aggregate([
-        { $match: { "company": companiId } },
-        { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
-        { $project: { usersWhoViewed: 1, done: 1, cadidateUsers: 1, 'hiring': 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
-        { $sort: { cadidateUsers: 1 } }
-    ])
-        .then(jobs => {
-        const data = {
-            userInfo: {
-                userId: user._id, name: user.name, email: user.email, profiles: user.profiles, bussinessAccount: user.companies,
-                cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
-            },
-            dashInfo: { totalJobs: jobs.length }
-        };
-        jobs.forEach(f => {
-            let candidateDoneExams = 0;
-            f.exams.forEach(e => {
-                const exam = {};
-                console.log("BEFORE FOREACH");
-                e.candidateControll.forEach(c => {
-                    console.log("CANDIDATE FOR EC");
-                    if (c.doneAt) {
-                        candidateDoneExams++;
-                    }
-                });
-            });
-            f['candidateDoneExam'] = candidateDoneExams;
-            f['usersWhoViewed'] = f.usersWhoViewed.length;
-            f['cadidateUsers'] = f.cadidateUsers.length;
-            delete f.exams;
-        });
-        data.dashInfo['jobs'] = jobs;
-        resp.json(data);
-    }).catch(next);
+    const userInfo = {
+        userInfo: {
+            companies: user.companies,
+            userId: user._id, name: user.name, email: user.email, profiles: user.profiles, curriculum: user.curriculum ? true : false,
+            cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
+        }
+    };
+    return resp.json(userInfo);
+    // Job.aggregate([
+    //   { $match: { "company": companiId } },
+    //   { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
+    //   { $project: { usersWhoViewed: 1, done: 1, cadidateUsers: 1, 'hiring': 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+    //   { $sort: { cadidateUsers: 1 } }
+    // ])
+    //   .then(jobs => {
+    //     const data = {
+    //       userInfo: {
+    //         userId: user._id, name: user.name, email: user.email, profiles: user.profiles, bussinessAccount: user.companies,
+    //         cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description, accessToken: token,
+    //       },
+    //       dashInfo: { totalJobs: jobs.length }
+    //     }
+    //     jobs.forEach(f => {
+    //       let candidateDoneExams = 0
+    //       f.exams.forEach(e => {
+    //         const exam = {}
+    //         console.log("BEFORE FOREACH")
+    //         e.candidateControll.forEach(c => {
+    //           console.log("CANDIDATE FOR EC")
+    //           if (c.doneAt) {
+    //             candidateDoneExams++;
+    //           }
+    //         })
+    //       })
+    //       f['candidateDoneExam'] = candidateDoneExams;
+    //       f['usersWhoViewed'] = f.usersWhoViewed.length;
+    //       f['cadidateUsers'] = f.cadidateUsers.length;
+    //       delete f.exams
+    //     })
+    //     data.dashInfo['jobs'] = jobs;
+    //     resp.json(data);
+    //   }).catch(next);
 }
 function candidateInfos(user, token, resp, next) {
     jobs_model_1.Job.aggregate([

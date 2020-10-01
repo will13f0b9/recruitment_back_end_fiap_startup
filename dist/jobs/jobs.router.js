@@ -116,6 +116,47 @@ class JobsRouter extends model_router_1.ModelRouter {
                 }).catch(next);
             }).catch(next);
         };
+        this.dashInfoForRecruiter = (req, resp, next) => {
+            new Promise((rslve, rjct) => {
+                if (!req.params)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar parametros na url requisição");
+                if (!req.params.companyId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar companyId como parametro na url requisição");
+                const companyId = req.params.companyId;
+                console.log(companyId);
+                jobs_model_1.Job.aggregate([
+                    { $match: { "company": mongoose.Types.ObjectId(companyId) } },
+                    { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
+                    { $project: { usersWhoViewed: 1, done: 1, cadidateUsers: 1, 'hiring': 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+                    { $sort: { cadidateUsers: 1 } }
+                ])
+                    .then(jobs => {
+                    const data = {
+                        dashInfo: { totalJobs: jobs.length }
+                    };
+                    console.log(jobs);
+                    jobs.forEach(f => {
+                        let candidateDoneExams = 0;
+                        f.exams.forEach(e => {
+                            const exam = {};
+                            console.log("BEFORE FOREACH");
+                            e.candidateControll.forEach(c => {
+                                console.log("CANDIDATE FOR EC");
+                                if (c.doneAt) {
+                                    candidateDoneExams++;
+                                }
+                            });
+                        });
+                        f['candidateDoneExam'] = candidateDoneExams;
+                        f['usersWhoViewed'] = f.usersWhoViewed.length;
+                        f['cadidateUsers'] = f.cadidateUsers.length;
+                        delete f.exams;
+                    });
+                    data.dashInfo['jobs'] = jobs;
+                    resp.json(data);
+                }).catch(next);
+            }).catch(next);
+        };
     }
     prepareOne(query) {
         console.log('preapre');
@@ -130,6 +171,7 @@ class JobsRouter extends model_router_1.ModelRouter {
         application.put(`${this.basePath}/:id`, [this.validateId, this.replace]);
         application.patch(`${this.basePath}/:id`, [this.validateId, this.update]);
         application.del(`${this.basePath}/:id`, [this.validateId, this.delete]);
+        application.get(`${this.basePath}/company/:companyId`, [this.dashInfoForRecruiter]);
     }
 }
 exports.jobsRouter = new JobsRouter();
