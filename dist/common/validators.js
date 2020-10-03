@@ -3,7 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //adaptada de https://gist.github.com/joaohcrangel/8bd48bcc40b9db63bef7201143303937.js
 exports.validateCPF = (cpf) => {
     let sum, rest;
-    if (cpf == undefined || cpf.trim().length === 0 || cpf === "00000000000") {
+    if (!cpf || cpf.trim().length === 0) {
+        return true;
+    }
+    if (cpf === "00000000000") {
         return false;
     }
     cpf = cpf.replace('.', '').replace('.', '').replace('-', '');

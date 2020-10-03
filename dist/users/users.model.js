@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     gender: {
         type: String,
         required: false,
-        enum: ['Male', 'Female']
+        enum: ['Male', 'Female', 'Undefined']
     },
     cpf: {
         type: String,

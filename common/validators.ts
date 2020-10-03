@@ -2,7 +2,11 @@
 export const validateCPF = (cpf: string): boolean => {
     let sum, rest
 
-    if(cpf == undefined || cpf.trim().length === 0 || cpf === "00000000000"){
+    if(!cpf || cpf.trim().length === 0){
+      return true;
+    }
+
+    if(cpf === "00000000000"){
       return false
     }
     cpf = cpf.replace('.', '').replace('.', '').replace('-','')
