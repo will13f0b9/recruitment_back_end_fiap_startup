@@ -7,6 +7,7 @@ import { authorize } from '../security/authz.handler'
 import { BadRequestError, NotFoundError } from 'restify-errors'
 import { Exam, CandidateControll } from '../exams/exams.model'
 import { Question } from '../questions/questions.model'
+import { User } from '../users/users.model'
 
 class JobsRouter extends ModelRouter<Job> {
   constructor() {
@@ -15,7 +16,8 @@ class JobsRouter extends ModelRouter<Job> {
 
   protected prepareOne(query: mongoose.DocumentQuery<Job, Job>): mongoose.DocumentQuery<Job, Job> {
     console.log('preapre')
-    return query.populate('company', 'name description')
+    return query
+              .populate('company', 'name description')
   }
 
   findAllPopulate = (req, resp, next) => {
