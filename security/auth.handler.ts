@@ -140,18 +140,30 @@ function candidateInfos(user: User, token: string, resp: restify.Response, next:
           console.log("BEFORE FOREACH")
           filtered.forEach(c => {
             console.log("CANDIDATE FOR EC")
-            let total = c.totalErrors + c.totalHits
-            exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
+
+            if(c.totalErrors != null && c.totalErrors != undefined 
+              && c.totalHits != null && c.totalHits != undefined 
+              ){
+                let total = c.totalErrors + c.totalHits
+                if(total == 0){
+                  exam['hitPercent'] = undefined;
+                }else{
+                  console.log("before calculate")
+                  exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
+                }
+            }
+            console.log("after calculate")
+
             exam['doneAt'] = c.doneAt
             exam['startedAt'] = c.startedAt
+            console.log("after candidate for ec")
           })
           f['exam'] = exam
         })
         console.log(f.approved);
         console.log(user._id);
-        console.log();
-        f['approved'] = f.approved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
-        f['repproved'] = f.repproved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+        f['approved'] = f.approved && f.approved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+        f['repproved'] = f.repproved && f.repproved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
         console.log("DELETE")
         delete f.exams
       })

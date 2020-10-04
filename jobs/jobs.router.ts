@@ -187,8 +187,17 @@ class JobsRouter extends ModelRouter<Job> {
                   exam['candidateName'] = user.name;
                   exam['candidateEmail'] = user.email;
                   if (c.candidateId.toString() == user._id.toString()) {
-                    let total = c.totalErrors + c.totalHits
-                    exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
+                    if(c.totalErrors != null && c.totalErrors != undefined 
+                      && c.totalHits != null && c.totalHits != undefined 
+                      ){
+                        let total = c.totalErrors + c.totalHits
+                        if(total == 0){
+                          exam['hitPercent'] = undefined;
+                        }else{
+                          exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
+                        }
+                    }
+                  
                     exam['doneAt'] = c.doneAt
                     exam['startedAt'] = c.startedAt
                     data.details.push(exam);
