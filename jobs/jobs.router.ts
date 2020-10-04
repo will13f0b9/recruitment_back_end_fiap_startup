@@ -77,11 +77,11 @@ class JobsRouter extends ModelRouter<Job> {
             console.log("Pode cadastrar exame??", job.examConfig && job.examConfig.length > 0);
             if (job.examConfig && job.examConfig.length > 0) {
               return Exam.findOne({ jobId: jobId }).then(async exam => {
-                const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: null, doneAt: null };
+                const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: new Date(), doneAt: null };
 
                 for (let index = 0; index < job.examConfig.length; index++) {
                   const element = job.examConfig[index];
-                  await Question.aggregate([{ $match: { skills: element.skill, difficulty: {$in: job.difficulty }} }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
+                  await Question.aggregate([{ $match: { skills: element.skill, difficulty: { $in: job.difficulty } } }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
                     console.log("RANDOM IDS QUESTIONS=", randomQuestion);
                     candidateControll.questions.push(...randomQuestion.map(f => {
                       const question = { questionId: f._id };
@@ -91,18 +91,23 @@ class JobsRouter extends ModelRouter<Job> {
                 }
                 console.log("CANDIDATE CONTROLL", candidateControll)
                 if (exam) {
-                  //registerUser in exam
-                  //@ts-ignore
-                  exam.candidateControll.push(candidateControll);
-                  exam.save().then(exam => {
+                  console.log("PUSH CANDIDATE")
+                  await exam.updateOne({ $push: { candidateControll: candidateControll } }).then(exam => {
                     return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" })
                   }).catch(next);
                 } else {
+                  console.log("ADD CANDIDATE")
                   const exam = new Exam();
                   exam.jobId = jobId;
+
+                  console.log(exam)
+
                   //@ts-ignore
                   exam.candidateControll = [candidateControll];
-                  exam.save().then(exam => {
+
+                  console.log(exam)
+
+                  await exam.save().then(exam => {
                     return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" })
                   }).catch(next);
                 }
@@ -175,7 +180,7 @@ class JobsRouter extends ModelRouter<Job> {
         { $sort: { exams: 1 } }
       ])
         .then(jobs => {
-          const data = {details: []}
+          const data = { details: [] }
           jobs.forEach(f => {
             data['approved'] = f.approved;
             data['repproved'] = f.repproved;
@@ -187,17 +192,17 @@ class JobsRouter extends ModelRouter<Job> {
                   exam['candidateName'] = user.name;
                   exam['candidateEmail'] = user.email;
                   if (c.candidateId.toString() == user._id.toString()) {
-                    if(c.totalErrors != null && c.totalErrors != undefined 
-                      && c.totalHits != null && c.totalHits != undefined 
-                      ){
-                        let total = c.totalErrors + c.totalHits
-                        if(total == 0){
-                          exam['hitPercent'] = undefined;
-                        }else{
-                          exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
-                        }
+                    if (c.totalErrors != null && c.totalErrors != undefined
+                      && c.totalHits != null && c.totalHits != undefined
+                    ) {
+                      let total = c.totalErrors + c.totalHits
+                      if (total == 0) {
+                        exam['hitPercent'] = undefined;
+                      } else {
+                        exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
+                      }
                     }
-                  
+
                     exam['doneAt'] = c.doneAt
                     exam['startedAt'] = c.startedAt
                     data.details.push(exam);

@@ -77,7 +77,7 @@ class JobsRouter extends model_router_1.ModelRouter {
                             console.log("Pode cadastrar exame??", job.examConfig && job.examConfig.length > 0);
                             if (job.examConfig && job.examConfig.length > 0) {
                                 return exams_model_1.Exam.findOne({ jobId: jobId }).then((exam) => __awaiter(this, void 0, void 0, function* () {
-                                    const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: null, doneAt: null };
+                                    const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: new Date(), doneAt: null };
                                     for (let index = 0; index < job.examConfig.length; index++) {
                                         const element = job.examConfig[index];
                                         yield questions_model_1.Question.aggregate([{ $match: { skills: element.skill, difficulty: { $in: job.difficulty } } }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
@@ -90,19 +90,20 @@ class JobsRouter extends model_router_1.ModelRouter {
                                     }
                                     console.log("CANDIDATE CONTROLL", candidateControll);
                                     if (exam) {
-                                        //registerUser in exam
-                                        //@ts-ignore
-                                        exam.candidateControll.push(candidateControll);
-                                        exam.save().then(exam => {
+                                        console.log("PUSH CANDIDATE");
+                                        yield exam.updateOne({ $push: { candidateControll: candidateControll } }).then(exam => {
                                             return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" });
                                         }).catch(next);
                                     }
                                     else {
+                                        console.log("ADD CANDIDATE");
                                         const exam = new exams_model_1.Exam();
                                         exam.jobId = jobId;
+                                        console.log(exam);
                                         //@ts-ignore
                                         exam.candidateControll = [candidateControll];
-                                        exam.save().then(exam => {
+                                        console.log(exam);
+                                        yield exam.save().then(exam => {
                                             return resp.json({ message: "Usuário candidatado com sucesso a vaga e ao exame!" });
                                         }).catch(next);
                                     }
