@@ -157,6 +157,94 @@ class JobsRouter extends model_router_1.ModelRouter {
                 }).catch(next);
             }).catch(next);
         };
+        this.candidateInfos = (req, res, next) => {
+            new Promise((reslv, rjct) => {
+                if (!req.params.jobId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar o jobId como parametro da url");
+                const jobId = req.params.jobId;
+                jobs_model_1.Job.aggregate([
+                    { $match: { _id: mongoose.Types.ObjectId(jobId) } },
+                    { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
+                    { $lookup: { from: "users", as: "users", localField: "cadidateUsers", foreignField: "_id" } },
+                    { $project: { 'approved': 1, 'repproved': 1, 'users._id': 1, 'users.name': 1, 'users.email': 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+                    { $sort: { exams: 1 } }
+                ])
+                    .then(jobs => {
+                    const data = { details: [] };
+                    jobs.forEach(f => {
+                        data['approved'] = f.approved;
+                        data['repproved'] = f.repproved;
+                        f.users.forEach(user => {
+                            f.exams.forEach(e => {
+                                e.candidateControll.forEach(c => {
+                                    const exam = {};
+                                    exam['candidateId'] = user._id;
+                                    exam['candidateName'] = user.name;
+                                    exam['candidateEmail'] = user.email;
+                                    if (c.candidateId.toString() == user._id.toString()) {
+                                        let total = c.totalErrors + c.totalHits;
+                                        exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`;
+                                        exam['doneAt'] = c.doneAt;
+                                        exam['startedAt'] = c.startedAt;
+                                        data.details.push(exam);
+                                    }
+                                    else {
+                                        data.details.push(exam);
+                                    }
+                                });
+                            });
+                        });
+                        console.log("DELETE");
+                        delete f.exams;
+                    });
+                    return res.json(data);
+                }).catch(next);
+            }).catch(next);
+        };
+        this.approveCandidate = (req, res, next) => {
+            new Promise((reslv, rjct) => {
+                if (!req.params.jobId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar o jobId como parametro da url");
+                if (!req.params.candidateId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar o candidateId como parametro da url");
+                const jobId = req.params.jobId;
+                const candidateId = req.params.candidateId;
+                console.log("BEFORE JOB");
+                jobs_model_1.Job.findById(jobId).then((job) => __awaiter(this, void 0, void 0, function* () {
+                    if (job.approved.indexOf(candidateId) != -1)
+                        throw new restify_errors_1.BadRequestError("Candidato já está na lista de aprovados!");
+                    console.log(job);
+                    job.approved.push(candidateId);
+                    const index = job.repproved.indexOf(candidateId);
+                    if (index > -1) {
+                        job.repproved.splice(index, 1);
+                    }
+                    yield job.save().catch(next);
+                    return res.send(200);
+                })).catch(next);
+            }).catch(next);
+        };
+        this.repproveCandidate = (req, res, next) => {
+            new Promise((reslv, rjct) => {
+                if (!req.params.jobId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar o jobId como parametro da url");
+                if (!req.params.candidateId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar o candidateId como parametro da url");
+                const jobId = req.params.jobId;
+                const candidateId = req.params.candidateId;
+                jobs_model_1.Job.findById(jobId).then((job) => __awaiter(this, void 0, void 0, function* () {
+                    if (job.repproved.indexOf(candidateId) != -1)
+                        throw new restify_errors_1.BadRequestError("Candidato já está na lista de reprovados!");
+                    job.repproved.push(candidateId);
+                    const index = job.approved.indexOf(candidateId);
+                    if (index > -1) {
+                        job.approved.splice(index, 1);
+                    }
+                    yield job.save().catch(next);
+                    return res.send(200);
+                })).catch(next);
+            }).catch(next);
+        };
     }
     prepareOne(query) {
         console.log('preapre');
@@ -173,6 +261,9 @@ class JobsRouter extends model_router_1.ModelRouter {
         application.patch(`${this.basePath}/:id`, [this.validateId, this.update]);
         application.del(`${this.basePath}/:id`, [this.validateId, this.delete]);
         application.get(`${this.basePath}/company/:companyId`, [this.dashInfoForRecruiter]);
+        application.get(`${this.basePath}/:jobId/candidates/`, [this.candidateInfos]);
+        application.post(`${this.basePath}/:jobId/approve/:candidateId`, [this.approveCandidate]);
+        application.post(`${this.basePath}/:jobId/repprove/:candidateId`, [this.repproveCandidate]);
     }
 }
 exports.jobsRouter = new JobsRouter();

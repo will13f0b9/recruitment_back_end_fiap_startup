@@ -31,6 +31,8 @@ export interface Job extends mongoose.Document {
   desirableSkills: string[],
   cadidateUsers: mongoose.Types.ObjectId[] | User[],
   usersWhoViewed: mongoose.Types.ObjectId[] | User[],
+  approved: mongoose.Types.ObjectId[] | User[],
+  repproved: mongoose.Types.ObjectId[] | User[],
   title: string,
   anotherInfo: string,
   description: string,
@@ -89,6 +91,18 @@ const restSchema = new mongoose.Schema({
     required: false,
     default: []
   },
+  repproved: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    required: false,
+    default: []
+  },
+  approved: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    required: false,
+    default: []
+  },
   title: {
     type: String,
     required: true
@@ -115,12 +129,12 @@ const restSchema = new mongoose.Schema({
   lastUpdateDate: {
     type: Date,
     required: false,
-    default: ()=> new Date()
+    default: () => new Date()
   },
   registerDate: {
     type: Date,
     required: false,
-    default: ()=> new Date()
+    default: () => new Date()
   },
   benefits: {
     type: [String],
@@ -129,7 +143,7 @@ const restSchema = new mongoose.Schema({
   difficulty: {
     type: [String],
     required: true,
-    enum: ["STAGE","JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
+    enum: ["STAGE", "JUNIOR", "PLENO", "SENIOR", "SPECIALIST"]
   },
   done: {
     type: Boolean,

@@ -110,7 +110,7 @@ function candidateInfos(user, token, resp, next) {
     jobs_model_1.Job.aggregate([
         { $match: { "cadidateUsers": user._id } },
         { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
-        { $project: { title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+        { $project: { approved: 1, repproved: 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
         { $sort: { exams: 1 } }
     ])
         .then(jobs => {
@@ -141,6 +141,11 @@ function candidateInfos(user, token, resp, next) {
                 });
                 f['exam'] = exam;
             });
+            console.log(f.approved);
+            console.log(user._id);
+            console.log();
+            f['approved'] = f.approved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+            f['repproved'] = f.repproved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
             console.log("DELETE");
             delete f.exams;
         });

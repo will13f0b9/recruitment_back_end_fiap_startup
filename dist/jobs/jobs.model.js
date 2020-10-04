@@ -56,6 +56,18 @@ const restSchema = new mongoose.Schema({
         required: false,
         default: []
     },
+    repproved: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User',
+        required: false,
+        default: []
+    },
+    approved: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User',
+        required: false,
+        default: []
+    },
     title: {
         type: String,
         required: true
