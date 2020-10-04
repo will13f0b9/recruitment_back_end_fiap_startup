@@ -80,7 +80,7 @@ class JobsRouter extends model_router_1.ModelRouter {
                                     const candidateControll = { registerDate: new Date(), candidateId: userId, questions: [], startedAt: null, doneAt: null };
                                     for (let index = 0; index < job.examConfig.length; index++) {
                                         const element = job.examConfig[index];
-                                        yield questions_model_1.Question.aggregate([{ $match: { skills: element.skill, difficulty: job.difficulty } }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
+                                        yield questions_model_1.Question.aggregate([{ $match: { skills: element.skill, difficulty: { $in: job.difficulty } } }, { $sample: { size: element.quantity } }, { $project: { _id: 1 } }]).then(randomQuestion => {
                                             console.log("RANDOM IDS QUESTIONS=", randomQuestion);
                                             candidateControll.questions.push(...randomQuestion.map(f => {
                                                 const question = { questionId: f._id };
