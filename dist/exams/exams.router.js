@@ -32,7 +32,7 @@ class ExamRouter extends model_router_1.ModelRouter {
                         }
                     });
                     if (canSaveStartedDate) {
-                        exam.save().catch(next);
+                        // exam.save().catch(next);
                     }
                     return resp.json(exam);
                 }).catch(next);
