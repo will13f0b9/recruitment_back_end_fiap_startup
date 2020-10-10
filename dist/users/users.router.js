@@ -17,6 +17,7 @@ const mongoose = require("mongoose");
 const fs = require("fs");
 const jobs_model_1 = require("../jobs/jobs.model");
 const { gzip, ungzip } = require('node-gzip');
+const nodemailer = require("nodemailer");
 class UsersRouter extends model_router_1.ModelRouter {
     constructor() {
         super(users_model_1.User);
@@ -107,6 +108,40 @@ class UsersRouter extends model_router_1.ModelRouter {
                 next();
             }
         };
+        this.resetPassword = (req, resp, next) => {
+            new Promise((rslv, rjectd) => __awaiter(this, void 0, void 0, function* () {
+                if (!req.params.id)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário como parametro da url");
+                const user = yield users_model_1.User.findById(req.params.id).catch(next);
+                if (!user)
+                    throw new restify_errors_1.NotFoundError("Usuário não encontrado!");
+                const newPassword = `${mongoose.Types.ObjectId()}_${new Date().getTime()}`;
+                console.log("NEW PASSWORD ", newPassword);
+                user.password = newPassword;
+                yield user.save().catch(next);
+                // create reusable transporter object using the default SMTP transport
+                let transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: 'vagacerta.noreply@gmail.com',
+                        pass: '5f822af35a50c9a9ef21c5d9',
+                    }
+                });
+                // send mail with defined transport object
+                let info = yield transporter.sendMail({
+                    from: 'vagacerta.noreply@gmail.com',
+                    to: user.email,
+                    subject: "Recuperação de senha ✔",
+                    html: `
+            <div>Olá <strong>${user.name}</strong>! redefinimos sua senha no vaga certa!</div>
+            Sua <strong>nova senha</strong> é: <h4>${newPassword}</h4>
+            <small style='color: grey;'>Equipe Vaga Certa.<br>Vaga Certa © 2020 - Todos os Direitos Reservados.</small>
+        `,
+                }).catch(next);
+                console.log("Message sent", info);
+                resp.json({ message: "Enviado e-mail com a nova senha" });
+            })).catch(next);
+        };
         this.on('beforeRender', document => {
             document.password = undefined;
             //delete document.password
@@ -122,6 +157,7 @@ class UsersRouter extends model_router_1.ModelRouter {
         application.patch(`${this.basePath}/:id`, [this.validateId, this.update]);
         application.del(`${this.basePath}/:id`, [this.validateId, this.delete]);
         application.post(`${this.basePath}/:id/curriculum`, [this.uploadCurriculum]);
+        application.post(`${this.basePath}/:id/reset/password`, [this.resetPassword]);
         application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter]);
         application.post(`${this.basePath}/authenticate`, auth_handler_1.authenticate);
     }

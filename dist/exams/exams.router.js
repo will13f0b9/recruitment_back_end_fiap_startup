@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const model_router_1 = require("../common/model-router");
 const mongoose = require("mongoose");
@@ -174,6 +183,57 @@ class ExamRouter extends model_router_1.ModelRouter {
                 }).catch(next);
             }).catch(next);
         };
+        this.detailsOfExamUser = (req, resp, next) => {
+            new Promise((res, rejct) => {
+                if (!req.params.id)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do job na url");
+                if (!req.params.userId)
+                    throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
+                console.log("DETAILS OF EXAM TO USER");
+                const jobId = mongoose.Types.ObjectId(req.params.id);
+                const userId = mongoose.Types.ObjectId(req.params.userId);
+                exams_model_1.Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId })
+                    .populate("candidateControll.questions.questionId", ["skills", "correctQuestionId"])
+                    .then((exam) => __awaiter(this, void 0, void 0, function* () {
+                    console.log("exam", exam);
+                    if (!exam)
+                        throw new restify_errors_1.NotFoundError("Exame não localizado");
+                    const job = yield jobs_model_1.Job.findById(jobId, "examConfig").lean();
+                    job.examConfig;
+                    exam.candidateControll = exam.candidateControll.filter(f => {
+                        return f.candidateId.toString() === req.params.userId;
+                    });
+                    exam.candidateControll.forEach(f => {
+                        f.questions.forEach(q => {
+                            let correctQuestion = false;
+                            const question = q.questionId;
+                            job.examConfig.forEach(e => {
+                                if (question.skills.indexOf(e.skill) != -1) {
+                                    if (!e['success']) {
+                                        e['success'] = e['success'] ? e['success'] : 0;
+                                    }
+                                    if (!e['error']) {
+                                        e['error'] = e['error'] ? e['error'] : 0;
+                                    }
+                                    if (q.answer === question.correctQuestionId) {
+                                        e['success'] += 1;
+                                    }
+                                    else {
+                                        e['error'] += 1;
+                                    }
+                                    let total = e['error'] + e['success'];
+                                    if (total != 0 && total) {
+                                        e['hitPercent'] = `${parseFloat(((100 * e['success']) / total).toString()).toFixed(2)}%`;
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    exam.save().catch(next);
+                    return resp.json(job);
+                })).catch(next);
+            }).catch(next);
+        };
     }
     prepareOne(query) {
         console.log('preapre');
@@ -185,6 +245,7 @@ class ExamRouter extends model_router_1.ModelRouter {
         application.post(`${this.basePath}/start/jobs/:id/users/:userId`, [this.findAllQuestionsOfUser]);
         application.get(`${this.basePath}/:id`, [this.validateId, this.findById]);
         application.get(`${this.basePath}/infos/jobs/:jobId/users/:userId`, [this.examsInfos]);
+        application.get(`${this.basePath}/infos/details/jobs/:id/users/:userId`, [this.detailsOfExamUser]);
         application.post(`${this.basePath}`, [this.save]);
         application.put(`${this.basePath}/:id`, [authz_handler_1.authorize('admin'), this.validateId, this.replace]);
         application.patch(`${this.basePath}/:id`, [authz_handler_1.authorize('admin'), this.validateId, this.update]);

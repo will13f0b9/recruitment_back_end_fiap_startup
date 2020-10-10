@@ -189,12 +189,71 @@ class ExamRouter extends ModelRouter<Exam> {
     }).catch(next);
   }
 
+  detailsOfExamUser = (req, resp, next) => {
+    new Promise((res, rejct) => {
+      if (!req.params.id) throw new BadRequestError("Necessário enviar id do job na url");
+      if (!req.params.userId) throw new BadRequestError("Necessário enviar id do usuário na url");
+      console.log("DETAILS OF EXAM TO USER")
+      const jobId = mongoose.Types.ObjectId(req.params.id);
+      const userId = mongoose.Types.ObjectId(req.params.userId);
+
+
+      Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId})
+        .populate("candidateControll.questions.questionId", ["skills", "correctQuestionId"])
+        .then(async exam => {
+          console.log("exam", exam);
+          if (!exam) throw new NotFoundError("Exame não localizado");
+          const job = await Job.findById(jobId, "examConfig").lean();
+          job.examConfig
+          
+          exam.candidateControll = exam.candidateControll.filter(f => {
+            return f.candidateId.toString() === req.params.userId;
+          });
+   
+          exam.candidateControll.forEach(f => {
+
+            f.questions.forEach(q => {
+              let correctQuestion = false;
+              const question = <Question>q.questionId;
+              job.examConfig.forEach(e =>{
+                if(question.skills.indexOf(e.skill) != -1){
+
+                  if(!e['success']){
+                    e['success'] = e['success'] ? e['success'] : 0;
+                  }
+
+                  if(!e['error']){
+                    e['error'] = e['error'] ? e['error'] : 0;
+                  }
+                  
+                  if (q.answer === question.correctQuestionId) {
+                    e['success'] += 1;
+                  } else {
+                    e['error'] += 1;
+                  }
+
+                  let total = e['error'] + e['success'];
+                  if (total != 0 && total) {
+                    e['hitPercent'] = `${parseFloat(((100 * e['success']) / total).toString()).toFixed(2)}%`
+                  }
+                }
+              })
+            })
+          })
+
+          exam.save().catch(next);
+          return resp.json(job);
+        }).catch(next);
+    }).catch(next);
+  }
+
   applyRoutes(application: restify.Server) {
     application.post(`${this.basePath}/answer/jobs/:id/users/:userId/questions/:questionId`, [this.answerQuestion])
     application.post(`${this.basePath}/done/jobs/:id/users/:userId`, [this.finishExam])
     application.post(`${this.basePath}/start/jobs/:id/users/:userId`, [this.findAllQuestionsOfUser])
     application.get(`${this.basePath}/:id`, [this.validateId, this.findById])
     application.get(`${this.basePath}/infos/jobs/:jobId/users/:userId`, [this.examsInfos])
+    application.get(`${this.basePath}/infos/details/jobs/:id/users/:userId`, [this.detailsOfExamUser])
     application.post(`${this.basePath}`, [this.save])
     application.put(`${this.basePath}/:id`, [authorize('admin'), this.validateId, this.replace])
     application.patch(`${this.basePath}/:id`, [authorize('admin'), this.validateId, this.update])
