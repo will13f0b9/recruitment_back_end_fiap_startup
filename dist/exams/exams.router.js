@@ -60,40 +60,41 @@ class ExamRouter extends model_router_1.ModelRouter {
                 exams_model_1.Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId, 'candidateControll.doneAt': null })
                     .populate("candidateControll.questions.questionId", ["description", "title", "alternatives", "correctQuestionId"])
                     .then(exam => {
+                    debugger;
                     console.log("exam", exam);
                     if (!exam)
                         throw new restify_errors_1.NotFoundError("Exame não localizado ou já finalizado para o usuário!");
                     let success = 0;
                     let error = 0;
-                    exam.candidateControll = exam.candidateControll.filter(f => {
-                        return f.candidateId.toString() === req.params.userId;
-                    });
                     let doneAt = undefined;
                     let startedAt = undefined;
                     let hitPercent = "0%";
                     exam.candidateControll.forEach(f => {
-                        f.questions.forEach(q => {
-                            let correctQuestion = false;
-                            const question = q.questionId;
-                            if (!q.answer && !forceDone)
-                                throw new restify_errors_1.BadRequestError("Faltam responder questões para finalizar o exame!");
-                            if (q.answer === question.correctQuestionId) {
-                                success += 1;
+                        if (f.candidateId.toString() === req.params.userId) {
+                            f.questions.forEach(q => {
+                                let correctQuestion = false;
+                                const question = q.questionId;
+                                if (!q.answer && !forceDone)
+                                    throw new restify_errors_1.BadRequestError("Faltam responder questões para finalizar o exame!");
+                                if (q.answer === question.correctQuestionId) {
+                                    success += 1;
+                                }
+                                else {
+                                    error += 1;
+                                }
+                            });
+                            let total = error + success;
+                            if (total != 0) {
+                                hitPercent = `${parseFloat(((100 * success) / total).toString()).toFixed(2)}%`;
                             }
-                            else {
-                                error += 1;
-                            }
-                        });
-                        let total = error + success;
-                        if (total != 0) {
-                            hitPercent = `${parseFloat(((100 * success) / total).toString()).toFixed(2)}%`;
+                            f.totalHits = success;
+                            f.totalErrors = error;
+                            f.doneAt = new Date();
+                            doneAt = f.doneAt;
+                            startedAt = f.startedAt;
                         }
-                        f.totalHits = success;
-                        f.totalErrors = error;
-                        f.doneAt = new Date();
-                        doneAt = f.doneAt;
-                        startedAt = f.startedAt;
                     });
+                    console.log(exam);
                     exam.save().catch(next);
                     return resp.json({ totalHits: success, totalErrors: error, doneAt: doneAt, startedAt: startedAt, hitPercent: hitPercent });
                 }).catch(next);
@@ -118,17 +119,16 @@ class ExamRouter extends model_router_1.ModelRouter {
                     .then(exam => {
                     if (!exam)
                         throw new restify_errors_1.NotFoundError("Questão não localizada ou não pode ter seu resultado alterado!");
-                    exam.candidateControll = exam.candidateControll.filter(f => {
-                        return f.candidateId.toString() === req.params.userId;
-                    });
                     exam.candidateControll.forEach(f => {
-                        f.questions.forEach(q => {
-                            console.log("compare => ", q.questionId.toString() == req.params.questionId);
-                            if (q.questionId.toString() == req.params.questionId) {
-                                console.log("ALTERANDO VALOR DA QUESTÃO");
-                                q.answer = req.body.answer;
-                            }
-                        });
+                        if (f.candidateId.toString() === req.params.userId) {
+                            f.questions.forEach(q => {
+                                console.log("compare => ", q.questionId.toString() == req.params.questionId);
+                                if (q.questionId.toString() == req.params.questionId) {
+                                    console.log("ALTERANDO VALOR DA QUESTÃO");
+                                    q.answer = req.body.answer;
+                                }
+                            });
+                        }
                     });
                     console.log("SAVE");
                     exam.save().then(saved => {
@@ -199,35 +199,36 @@ class ExamRouter extends model_router_1.ModelRouter {
                     if (!exam)
                         throw new restify_errors_1.NotFoundError("Exame não localizado");
                     const job = yield jobs_model_1.Job.findById(jobId, "examConfig").lean();
-                    job.examConfig;
-                    exam.candidateControll = exam.candidateControll.filter(f => {
-                        return f.candidateId.toString() === req.params.userId;
-                    });
+                    job.examConfig.forEach(e => e.quantity = 0);
                     exam.candidateControll.forEach(f => {
-                        f.questions.forEach(q => {
-                            let correctQuestion = false;
-                            const question = q.questionId;
-                            job.examConfig.forEach(e => {
-                                if (question.skills.indexOf(e.skill) != -1) {
-                                    if (!e['success']) {
-                                        e['success'] = e['success'] ? e['success'] : 0;
+                        if (f.candidateId.toString() === req.params.userId) {
+                            f.questions.forEach(q => {
+                                let correctQuestion = false;
+                                const question = q.questionId;
+                                job.examConfig.forEach(e => {
+                                    if (question.skills.indexOf(e.skill) != -1) {
+                                        if (!e['success']) {
+                                            e['success'] = e['success'] ? e['success'] : 0;
+                                        }
+                                        if (!e['error']) {
+                                            e['error'] = e['error'] ? e['error'] : 0;
+                                        }
+                                        if (q.answer === question.correctQuestionId) {
+                                            e['quantity'] += 1;
+                                            e['success'] += 1;
+                                        }
+                                        else {
+                                            e['quantity'] += 1;
+                                            e['error'] += 1;
+                                        }
+                                        let total = e['error'] + e['success'];
+                                        if (total != 0 && total) {
+                                            e['hitPercent'] = `${parseFloat(((100 * e['success']) / total).toString()).toFixed(2)}%`;
+                                        }
                                     }
-                                    if (!e['error']) {
-                                        e['error'] = e['error'] ? e['error'] : 0;
-                                    }
-                                    if (q.answer === question.correctQuestionId) {
-                                        e['success'] += 1;
-                                    }
-                                    else {
-                                        e['error'] += 1;
-                                    }
-                                    let total = e['error'] + e['success'];
-                                    if (total != 0 && total) {
-                                        e['hitPercent'] = `${parseFloat(((100 * e['success']) / total).toString()).toFixed(2)}%`;
-                                    }
-                                }
+                                });
                             });
-                        });
+                        }
                     });
                     exam.save().catch(next);
                     return resp.json(job);

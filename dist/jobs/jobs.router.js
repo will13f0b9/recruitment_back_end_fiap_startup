@@ -176,32 +176,39 @@ class JobsRouter extends model_router_1.ModelRouter {
                         data['approved'] = f.approved;
                         data['repproved'] = f.repproved;
                         f.users.forEach(user => {
-                            f.exams.forEach(e => {
-                                e.candidateControll.forEach(c => {
-                                    const exam = {};
-                                    exam['candidateId'] = user._id;
-                                    exam['candidateName'] = user.name;
-                                    exam['candidateEmail'] = user.email;
-                                    if (c.candidateId.toString() == user._id.toString()) {
-                                        if (c.totalErrors != null && c.totalErrors != undefined
-                                            && c.totalHits != null && c.totalHits != undefined) {
-                                            let total = c.totalErrors + c.totalHits;
-                                            if (total == 0) {
-                                                exam['hitPercent'] = undefined;
+                            if (!f.exams || f.exams.length == 0) {
+                                console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXX");
+                                const exam = {};
+                                exam['candidateId'] = user._id;
+                                exam['candidateName'] = user.name;
+                                exam['candidateEmail'] = user.email;
+                                data.details.push(exam);
+                            }
+                            else {
+                                f.exams.forEach(e => {
+                                    e.candidateControll.forEach(c => {
+                                        const exam = {};
+                                        exam['candidateId'] = user._id;
+                                        exam['candidateName'] = user.name;
+                                        exam['candidateEmail'] = user.email;
+                                        if (c.candidateId.toString() == user._id.toString()) {
+                                            if (c.totalErrors != null && c.totalErrors != undefined
+                                                && c.totalHits != null && c.totalHits != undefined) {
+                                                let total = c.totalErrors + c.totalHits;
+                                                if (total == 0) {
+                                                    exam['hitPercent'] = undefined;
+                                                }
+                                                else {
+                                                    exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`;
+                                                }
                                             }
-                                            else {
-                                                exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`;
-                                            }
+                                            exam['doneAt'] = c.doneAt;
+                                            exam['startedAt'] = c.startedAt;
+                                            data.details.push(exam);
                                         }
-                                        exam['doneAt'] = c.doneAt;
-                                        exam['startedAt'] = c.startedAt;
-                                        data.details.push(exam);
-                                    }
-                                    else {
-                                        data.details.push(exam);
-                                    }
+                                    });
                                 });
-                            });
+                            }
                         });
                         console.log("DELETE");
                         delete f.exams;

@@ -8,6 +8,7 @@ import * as mongoose from 'mongoose'
 import * as fs from 'fs';
 import { jobsRouter } from '../jobs/jobs.router'
 import { Job } from '../jobs/jobs.model'
+import { Company } from '../companies/companies.model'
 const { gzip, ungzip } = require('node-gzip');
 const nodemailer = require("nodemailer");
 
@@ -104,45 +105,64 @@ class UsersRouter extends ModelRouter<User> {
     }
   }
 
-  resetPassword = (req, resp, next) => {
-    new Promise(async (rslv, rjectd) => {
-      if (!req.params.id) throw new BadRequestError("Necessário enviar id do usuário como parametro da url")
+  resetPassword = async (req, resp, next) => {
+    return new Promise(async (rslv, rjectd) => {
+      try{
 
-      const user:User = await User.findById(req.params.id).catch(next);
-      if (!user) throw new NotFoundError("Usuário não encontrado!");
-
-      const newPassword = `${mongoose.Types.ObjectId()}_${new Date().getTime()}`;
-
-      console.log("NEW PASSWORD ", newPassword);
-
-      user.password = newPassword;
-      await user.save().catch(next);
-
-      // create reusable transporter object using the default SMTP transport
-      let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: 'vagacerta.noreply@gmail.com', // generated ethereal user
-          pass: '5f822af35a50c9a9ef21c5d9', // generated ethereal password
+        if (!req.query.email) throw new BadRequestError("Necessário enviar email como queryString da url")
+        if (req.query.isCompany == undefined) throw new BadRequestError("Necessário enviar isCompany como queryString da url")
+  
+        let user;
+        console.log(req.query)
+        if (req.query.isCompany == "true") {
+          console.log('Company')
+          user = await Company.findOne({ email: req.query.email }, {name: 1, email: 1, password: 1}).catch(next);
+        } else {
+          console.log('User')
+          user = await User.findOne({ email: req.query.email }, {name: 1, email: 1, password: 1}).catch(next);
         }
-      });
-
-      // send mail with defined transport object
-      let info = await transporter.sendMail({
-        from: 'vagacerta.noreply@gmail.com', // sender address
-        to: user.email, // list of receivers
-        subject: "Recuperação de senha ✔", // Subject line
-        html: `
-            <div>Olá <strong>${user.name}</strong>! redefinimos sua senha no vaga certa!</div>
-            Sua <strong>nova senha</strong> é: <h4>${newPassword}</h4>
-            <small style='color: grey;'>Equipe Vaga Certa.<br>Vaga Certa © 2020 - Todos os Direitos Reservados.</small>
-        `, // html body
-      }).catch(next);
-
-      console.log("Message sent", info);
-      resp.json({ message: "Enviado e-mail com a nova senha" })
+        console.log(user);
+        if (!user) throw new NotFoundError("Conta do e-mail informado não encontrado!");
+  
+        const newPassword = `${mongoose.Types.ObjectId()}${new Date().getTime()}`;
+  
+        console.log("NEW PASSWORD ", newPassword);
+  
+        user.password = newPassword;
+        await user.save().catch(next);
+  
+        // create reusable transporter object using the default SMTP transport
+        let transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'vagacerta.noreply@gmail.com', // generated ethereal user
+            pass: '5f822af35a50c9a9ef21c5d9', // generated ethereal password
+          }
+        });
+  
+        // send mail with defined transport object
+        const info = await transporter.sendMail({
+          from: 'vagacerta.noreply@gmail.com', // sender address
+          to: user.email, // list of receivers
+          subject: "Recuperação de senha ✔", // Subject line
+          html: `
+              <div>Olá <strong>${user.name}</strong>!</div>
+              Redefinimos sua senha no vaga certa.<br>
+              Sua <strong>nova senha</strong> é: <h4>${newPassword}</h4>
+              <small style='color: grey;'>Equipe Vaga Certa.<br>Vaga Certa © 2020 - Todos os Direitos Reservados.</small>
+          `, // html body
+        }).catch(next);
+  
+        console.log("Message sent", info);
+        resp.json({ message: "Enviado e-mail com a nova senha" })
+        return rslv();
+      }catch(e){
+        return next(e);
+      }
     }).catch(next);
   }
+
+
   applyRoutes(application: restify.Server) {
 
     application.get({ path: `${this.basePath}`, version: '2.0.0' }, [this.findByEmail, this.findAll])
@@ -154,7 +174,7 @@ class UsersRouter extends ModelRouter<User> {
     application.patch(`${this.basePath}/:id`, [this.validateId, this.update])
     application.del(`${this.basePath}/:id`, [this.validateId, this.delete])
     application.post(`${this.basePath}/:id/curriculum`, [this.uploadCurriculum])
-    application.post(`${this.basePath}/:id/reset/password`, [this.resetPassword])
+    application.post(`${this.basePath}/reset/password`, [this.resetPassword])
 
     application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter])
 
