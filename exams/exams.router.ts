@@ -25,23 +25,9 @@ class ExamRouter extends ModelRouter<Exam> {
 
       const jobId = mongoose.Types.ObjectId(req.params.id);
       const userId = mongoose.Types.ObjectId(req.params.userId);
-
-      Exam.findOne({ jobId: jobId, 'candidateControll.doneAt': null, 'candidateControll.candidateId': userId }).populate("candidateControll.questions.questionId", ["description", "title", "alternatives"]).then(exam => {
+      Exam.findOne({ jobId: jobId, candidateControll: { $elemMatch: { doneAt:  null, candidateId:  userId  } } }).populate("candidateControll.questions.questionId", ["description", "title", "alternatives"]).then(exam => {
         console.log("Exame then")
         if (!exam) throw new NotFoundError("Exame não localizado ou já finalizado para o usuário!");
-        exam.candidateControll = exam.candidateControll.filter(f => {
-          return f.candidateId.toString() === req.params.userId;
-        });
-        let canSaveStartedDate = false;
-        exam.candidateControll.forEach(f => {
-          if (!f.startedAt) {
-            canSaveStartedDate = true;
-            f.startedAt = new Date();
-          }
-        })
-        if (canSaveStartedDate) {
-          // exam.save().catch(next);
-        }
         return resp.json(exam);
       }).catch(next);
     }).catch(next);
@@ -70,7 +56,7 @@ class ExamRouter extends ModelRouter<Exam> {
           let startedAt = undefined;
           let hitPercent = "0%";
           exam.candidateControll.forEach(f => {
-            if(f.candidateId.toString() === req.params.userId){
+            if (f.candidateId.toString() === req.params.userId) {
               f.questions.forEach(q => {
                 let correctQuestion = false;
                 const question = <Question>q.questionId;
@@ -81,13 +67,13 @@ class ExamRouter extends ModelRouter<Exam> {
                   error += 1;
                 }
               })
-  
-  
+
+
               let total = error + success;
               if (total != 0) {
                 hitPercent = `${parseFloat(((100 * success) / total).toString()).toFixed(2)}%`
               }
-  
+
               f.totalHits = success;
               f.totalErrors = error;
               f.doneAt = new Date();
@@ -119,7 +105,7 @@ class ExamRouter extends ModelRouter<Exam> {
         .then(exam => {
           if (!exam) throw new NotFoundError("Questão não localizada ou não pode ter seu resultado alterado!");
           exam.candidateControll.forEach(f => {
-            if(f.candidateId.toString() === req.params.userId){
+            if (f.candidateId.toString() === req.params.userId) {
               f.questions.forEach(q => {
                 console.log("compare => ", q.questionId.toString() == req.params.questionId)
                 if (q.questionId.toString() == req.params.questionId) {
@@ -157,27 +143,27 @@ class ExamRouter extends ModelRouter<Exam> {
           jobs.forEach(f => {
             data['approved'] = f.approved;
             data['repproved'] = f.repproved;
-              f.exams.forEach(e => {
-                e.candidateControll.forEach(c => {
-                  if (c.candidateId.toString() == userId.toString()) {
-                    if(c.totalErrors != null && c.totalErrors != undefined 
-                      && c.totalHits != null && c.totalHits != undefined 
-                      ){
-                        let total = c.totalErrors + c.totalHits
-                        if(total == 0){
-                          data['hitPercent'] = "0%";
-                        }else{
-                          data['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
-                        }
+            f.exams.forEach(e => {
+              e.candidateControll.forEach(c => {
+                if (c.candidateId.toString() == userId.toString()) {
+                  if (c.totalErrors != null && c.totalErrors != undefined
+                    && c.totalHits != null && c.totalHits != undefined
+                  ) {
+                    let total = c.totalErrors + c.totalHits
+                    if (total == 0) {
+                      data['hitPercent'] = "0%";
+                    } else {
+                      data['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
                     }
-                  
-                    data['totalHits'] = c.totalHits;
-                    data['totalErrors'] = c.totalErrors;
-                    data['doneAt'] = c.doneAt
-                    data['startedAt'] = c.startedAt
                   }
-                })
+
+                  data['totalHits'] = c.totalHits;
+                  data['totalErrors'] = c.totalErrors;
+                  data['doneAt'] = c.doneAt
+                  data['startedAt'] = c.startedAt
+                }
               })
+            })
             console.log("DELETE")
             delete f.exams
           })
@@ -196,31 +182,31 @@ class ExamRouter extends ModelRouter<Exam> {
       const userId = mongoose.Types.ObjectId(req.params.userId);
 
 
-      Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId})
+      Exam.findOne({ jobId: jobId, 'candidateControll.candidateId': userId })
         .populate("candidateControll.questions.questionId", ["skills", "correctQuestionId"])
         .then(async exam => {
           console.log("exam", exam);
           if (!exam) throw new NotFoundError("Exame não localizado");
           const job = await Job.findById(jobId, "examConfig").lean();
-          job.examConfig.forEach(e => e.quantity =0);
-   
+          job.examConfig.forEach(e => e.quantity = 0);
+
           exam.candidateControll.forEach(f => {
-            if(f.candidateId.toString() === req.params.userId){
+            if (f.candidateId.toString() === req.params.userId) {
               f.questions.forEach(q => {
                 let correctQuestion = false;
                 const question = <Question>q.questionId;
-                job.examConfig.forEach(e =>{
-                  if(question.skills.indexOf(e.skill) != -1){
-                    
-                    
-                    if(!e['success']){
+                job.examConfig.forEach(e => {
+                  if (question.skills.indexOf(e.skill) != -1) {
+
+
+                    if (!e['success']) {
                       e['success'] = e['success'] ? e['success'] : 0;
                     }
-  
-                    if(!e['error']){
+
+                    if (!e['error']) {
                       e['error'] = e['error'] ? e['error'] : 0;
                     }
-                    
+
                     if (q.answer === question.correctQuestionId) {
                       e['quantity'] += 1;
                       e['success'] += 1;
@@ -228,7 +214,7 @@ class ExamRouter extends ModelRouter<Exam> {
                       e['quantity'] += 1;
                       e['error'] += 1;
                     }
-  
+
                     let total = e['error'] + e['success'];
                     if (total != 0 && total) {
                       e['hitPercent'] = `${parseFloat(((100 * e['success']) / total).toString()).toFixed(2)}%`
@@ -236,7 +222,7 @@ class ExamRouter extends ModelRouter<Exam> {
                   }
                 })
               })
-              
+
             }
           })
 

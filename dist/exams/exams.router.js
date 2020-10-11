@@ -26,23 +26,10 @@ class ExamRouter extends model_router_1.ModelRouter {
                     throw new restify_errors_1.BadRequestError("Necessário enviar id do usuário na url");
                 const jobId = mongoose.Types.ObjectId(req.params.id);
                 const userId = mongoose.Types.ObjectId(req.params.userId);
-                exams_model_1.Exam.findOne({ jobId: jobId, 'candidateControll.doneAt': null, 'candidateControll.candidateId': userId }).populate("candidateControll.questions.questionId", ["description", "title", "alternatives"]).then(exam => {
+                exams_model_1.Exam.findOne({ jobId: jobId, candidateControll: { $elemMatch: { doneAt: null, candidateId: userId } } }).populate("candidateControll.questions.questionId", ["description", "title", "alternatives"]).then(exam => {
                     console.log("Exame then");
                     if (!exam)
                         throw new restify_errors_1.NotFoundError("Exame não localizado ou já finalizado para o usuário!");
-                    exam.candidateControll = exam.candidateControll.filter(f => {
-                        return f.candidateId.toString() === req.params.userId;
-                    });
-                    let canSaveStartedDate = false;
-                    exam.candidateControll.forEach(f => {
-                        if (!f.startedAt) {
-                            canSaveStartedDate = true;
-                            f.startedAt = new Date();
-                        }
-                    });
-                    if (canSaveStartedDate) {
-                        // exam.save().catch(next);
-                    }
                     return resp.json(exam);
                 }).catch(next);
             }).catch(next);
