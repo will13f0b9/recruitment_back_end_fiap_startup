@@ -107,30 +107,30 @@ class UsersRouter extends ModelRouter<User> {
 
   resetPassword = async (req, resp, next) => {
     return new Promise(async (rslv, rjectd) => {
-      try{
+      try {
 
         if (!req.query.email) throw new BadRequestError("Necessário enviar email como queryString da url")
         if (req.query.isCompany == undefined) throw new BadRequestError("Necessário enviar isCompany como queryString da url")
-  
+
         let user;
         console.log(req.query)
         if (req.query.isCompany == "true") {
           console.log('Company')
-          user = await Company.findOne({ email: req.query.email }, {name: 1, email: 1, password: 1}).catch(next);
+          user = await Company.findOne({ email: req.query.email }, { name: 1, email: 1, password: 1 }).catch(next);
         } else {
           console.log('User')
-          user = await User.findOne({ email: req.query.email }, {name: 1, email: 1, password: 1}).catch(next);
+          user = await User.findOne({ email: req.query.email }, { name: 1, email: 1, password: 1 }).catch(next);
         }
         console.log(user);
         if (!user) throw new NotFoundError("Conta do e-mail informado não encontrado!");
-  
+
         const newPassword = `${mongoose.Types.ObjectId()}${new Date().getTime()}`;
-  
+
         console.log("NEW PASSWORD ", newPassword);
-  
+
         user.password = newPassword;
         await user.save().catch(next);
-  
+
         // create reusable transporter object using the default SMTP transport
         let transporter = nodemailer.createTransport({
           service: 'gmail',
@@ -139,7 +139,7 @@ class UsersRouter extends ModelRouter<User> {
             pass: '5f822af35a50c9a9ef21c5d9', // generated ethereal password
           }
         });
-  
+
         // send mail with defined transport object
         const info = await transporter.sendMail({
           from: 'vagacerta.noreply@gmail.com', // sender address
@@ -152,16 +152,84 @@ class UsersRouter extends ModelRouter<User> {
               <small style='color: grey;'>Equipe Vaga Certa.<br>Vaga Certa © 2020 - Todos os Direitos Reservados.</small>
           `, // html body
         }).catch(next);
-  
+
         console.log("Message sent", info);
         resp.json({ message: "Enviado e-mail com a nova senha" })
         return rslv();
-      }catch(e){
+      } catch (e) {
         return next(e);
       }
     }).catch(next);
   }
 
+  dashInfo = (req, resp, next) => {
+    if (!req.params.id) throw new BadRequestError("Necessário enviar id como param da url");
+    const id = req.params.id;
+    User.findById(id, '+password').populate('companies', 'name description', Company)
+      .then(user => {
+        if (!user) throw new NotFoundError("Usúario não encontrado");
+
+        Job.aggregate([
+          { $match: { "cadidateUsers": user._id } },
+          { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
+          { $project: { approved: 1, repproved: 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+          { $sort: { exams: 1 } }
+        ])
+          .then(jobs => {
+            const qntdVagas = jobs.length
+            const data = {
+              userInfo: {
+                userId: user._id, name: user.name, email: user.email, profiles: user.profiles, curriculum: user.curriculum ? true : false,
+                cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description
+              },
+              dashInfo: { totalJobsSubscribe: qntdVagas }
+            }
+
+            console.log("QNTD VAGAS", qntdVagas)
+            jobs.forEach(f => {
+              let hitAmountPercent = 0
+              f.exams.forEach(e => {
+                const exam = {}
+                const filtered = e.candidateControll.filter(element => {
+                  console.log(element)
+                  return element.candidateId.toString() === user._id.toString()
+                })
+                console.log("BEFORE FOREACH")
+                filtered.forEach(c => {
+                  console.log("CANDIDATE FOR EC")
+
+                  if (c.totalErrors != null && c.totalErrors != undefined
+                    && c.totalHits != null && c.totalHits != undefined
+                  ) {
+                    let total = c.totalErrors + c.totalHits
+                    if (total == 0) {
+                      exam['hitPercent'] = undefined;
+                    } else {
+                      console.log("before calculate")
+                      exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`
+                    }
+                  }
+                  console.log("after calculate")
+
+                  exam['doneAt'] = c.doneAt
+                  exam['startedAt'] = c.startedAt
+                  console.log("after candidate for ec")
+                })
+                f['exam'] = exam
+              })
+              console.log(f.approved);
+              console.log(user._id);
+              f['approved'] = f.approved && f.approved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+              f['repproved'] = f.repproved && f.repproved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+              console.log("DELETE")
+              delete f.exams
+            })
+            data.dashInfo['jobs'] = jobs
+            resp.json(data)
+          }).catch(next)
+
+      }).catch(next);
+  }
 
   applyRoutes(application: restify.Server) {
 
@@ -179,6 +247,8 @@ class UsersRouter extends ModelRouter<User> {
     application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter])
 
     application.post(`${this.basePath}/authenticate`, authenticate)
+
+    application.get(`${this.basePath}/dashInfo/:id`, [this.dashInfo])
   }
 }
 

@@ -162,6 +162,71 @@ class UsersRouter extends model_router_1.ModelRouter {
                 }
             })).catch(next);
         });
+        this.dashInfo = (req, resp, next) => {
+            if (!req.params.id)
+                throw new restify_errors_1.BadRequestError("Necessário enviar id como param da url");
+            const id = req.params.id;
+            users_model_1.User.findById(id, '+password').populate('companies', 'name description', companies_model_1.Company)
+                .then(user => {
+                if (!user)
+                    throw new restify_errors_1.NotFoundError("Usúario não encontrado");
+                jobs_model_1.Job.aggregate([
+                    { $match: { "cadidateUsers": user._id } },
+                    { $lookup: { from: "exams", as: "exams", localField: "_id", foreignField: "jobId" } },
+                    { $project: { approved: 1, repproved: 1, title: 1, salary: 1, requiredSkills: 1, 'exams.candidateControll.doneAt': 1, 'exams.candidateControll.startedAt': 1, 'exams.candidateControll.totalErrors': 1, 'exams.candidateControll.candidateId': 1, 'exams.candidateControll.totalHits': 1 } },
+                    { $sort: { exams: 1 } }
+                ])
+                    .then(jobs => {
+                    const qntdVagas = jobs.length;
+                    const data = {
+                        userInfo: {
+                            userId: user._id, name: user.name, email: user.email, profiles: user.profiles, curriculum: user.curriculum ? true : false,
+                            cpf: user.cpf, gender: user.gender, dateOfBirth: user.dateOfBirth, description: user.description
+                        },
+                        dashInfo: { totalJobsSubscribe: qntdVagas }
+                    };
+                    console.log("QNTD VAGAS", qntdVagas);
+                    jobs.forEach(f => {
+                        let hitAmountPercent = 0;
+                        f.exams.forEach(e => {
+                            const exam = {};
+                            const filtered = e.candidateControll.filter(element => {
+                                console.log(element);
+                                return element.candidateId.toString() === user._id.toString();
+                            });
+                            console.log("BEFORE FOREACH");
+                            filtered.forEach(c => {
+                                console.log("CANDIDATE FOR EC");
+                                if (c.totalErrors != null && c.totalErrors != undefined
+                                    && c.totalHits != null && c.totalHits != undefined) {
+                                    let total = c.totalErrors + c.totalHits;
+                                    if (total == 0) {
+                                        exam['hitPercent'] = undefined;
+                                    }
+                                    else {
+                                        console.log("before calculate");
+                                        exam['hitPercent'] = `${parseFloat(((100 * c.totalHits) / total).toString()).toFixed(2)}%`;
+                                    }
+                                }
+                                console.log("after calculate");
+                                exam['doneAt'] = c.doneAt;
+                                exam['startedAt'] = c.startedAt;
+                                console.log("after candidate for ec");
+                            });
+                            f['exam'] = exam;
+                        });
+                        console.log(f.approved);
+                        console.log(user._id);
+                        f['approved'] = f.approved && f.approved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+                        f['repproved'] = f.repproved && f.repproved.filter(d => d.toString() == user._id.toString()).length > 0 ? true : false;
+                        console.log("DELETE");
+                        delete f.exams;
+                    });
+                    data.dashInfo['jobs'] = jobs;
+                    resp.json(data);
+                }).catch(next);
+            }).catch(next);
+        };
         this.on('beforeRender', document => {
             document.password = undefined;
             //delete document.password
@@ -180,6 +245,7 @@ class UsersRouter extends model_router_1.ModelRouter {
         application.post(`${this.basePath}/reset/password`, [this.resetPassword]);
         application.post(`${this.basePath}/:userId/companies/`, [this.addNewCompanyToPreviousRecruiter]);
         application.post(`${this.basePath}/authenticate`, auth_handler_1.authenticate);
+        application.get(`${this.basePath}/dashInfo/:id`, [this.dashInfo]);
     }
 }
 exports.usersRouter = new UsersRouter();
